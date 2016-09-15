@@ -1,0 +1,3 @@
+# Proyecto Redes de Computadores 2016-2s (Grupo 1)
+
+Denme un momentito que estoy aprendido a usar git...
