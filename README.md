@@ -15,4 +15,4 @@ See also the list of [contributors](https://github.com/your/project/contributors
 
 ## Acknowledgments
 
-* Basic Sound Processing with Python (http://samcarcagno.altervista.org/blog/basic-sound-processing-python/?doing_wp_cron=1473971034.5504450798034667968750)
+* [Basic Sound Processing with Python](http://samcarcagno.altervista.org/blog/basic-sound-processing-python/?doing_wp_cron=1473971034.5504450798034667968750)
