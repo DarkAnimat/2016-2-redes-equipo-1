@@ -11,7 +11,7 @@ El objetivo de este proyecto es implementar un sistema de comunicaciones digital
 * **David Calistro**
 * **Rodrigo Armijo**
 
-See also the list of [contributors](https://github.com/your/project/contributors) who participated in this project.
+See also the list of [contributors](https://github.com/redes-usach/redes-equipo-1/contributors) who participated in this project.
 
 ## Acknowledgments
 
