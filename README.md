@@ -5,9 +5,9 @@ El objetivo de este proyecto es implementar un sistema de comunicaciones digital
 
 ## Authors
 
-* **Felipe Jara** [Nialevolstel](https://github.com/Nialevolstel)
+* **Felipe Jara** / [Nialevolstel](https://github.com/Nialevolstel)
 * **Dania Montanares**
-* **Franz Farbinger** [DarkAnimat](https://github.com/DarkAnimat)
+* **Franz Farbinger** / [DarkAnimat](https://github.com/DarkAnimat)
 * **David Calistro**
 * **Rodrigo Armijo**
 
