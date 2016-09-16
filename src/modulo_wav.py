@@ -90,7 +90,7 @@ def recordWavFile(record_name, record_seconds):
     audio.terminate()
 
     # Save Recording
-    waveFile = openWavFile(record_name,'wb')
+    waveFile = wave.openfp(record_name, "wb")
     waveFile.setnchannels(CHANNELS)
     waveFile.setsampwidth(audio.get_sample_size(FORMAT))
     waveFile.setframerate(RATE)
@@ -100,32 +100,61 @@ def recordWavFile(record_name, record_seconds):
 #   Just print some graphs (Works only for int16)
 def analyzeWavFile(filename):
 
-    logging.info ("\nAnalyzing wavFile... This could take some time")
     audioPath = formatWavPath(filename)
     sampFreq, data = wavfile.read(audioPath)
-    data = data / (2.**15)                      # Normalize data to point values between [-1,1)
 
     # Obtaining Sampling Points and Number of channels:
-    if (len(data.shape) == 1):
-        sampPoints = data.shape[0]              # Only one channel
-        channels = 1
-    else:
-        sampPoints, channels = data.shape       # More than one channel
-        data = data[:, 0]                       # Working only with the first channel
+    if (len(data.shape) == 1):                  # Audio with one channel only
+        sampPoints = data.shape[0]
+    else:                                       # More than one channel (needs only the first)
+        sampPoints, channels = data.shape
+        data = data[:, 0]
+    duration = (sampPoints / sampFreq) * 1000   # Wave duration in miliseconds
 
-    duration = sampPoints / sampFreq            # Wave duration in seconds
 
+    # Plotting
+    print("Now plotting. This could take some time, please wait...")
+
+    # Plotting the signal on time domain
+    plt.figure(num=1,figsize=(14,6), dpi=100)
+    plt.subplot(211)
     timeArray = np.arange(0, sampPoints, 1)
-    timeArray = timeArray / sampFreq
-    timeArray = timeArray * 1000  # scale to milliseconds
-    plt.plot(timeArray, data, color='k')
-    plt.ylabel('Amplitude')
+    timeArray = (timeArray / sampFreq) * 1000
+    plt.plot(timeArray, data, color='b')
+    plt.ylabel('Amplitude (db)')
     plt.xlabel('Time (ms)')
-    plt.title(filename.replace(".wav","") + " Input signal")
+    plt.xlim([0, duration])
+    plt.title('Signal (Time domain and Frequency domain)')
     plt.grid(True)
     plt.savefig(os.path.join(PROJECT_PATH, "plot_files", filename.replace(".wav","(Input signal).png")))
-    logging.debug("Plot has ben saved...")
+
+    # Plotting the signal on frequency domain
+    plt.subplot(212)
+    fftdata = fft(data)
+    nPoints = len(data)
+    nUniquePoints = int(np.ceil((nPoints+1)/2.0))
+    fftdata = abs(fftdata[0:nUniquePoints])       # FFT is symmetric. Half of that it's not needed
+    mdata = fftdata/float(nPoints)                  # Magnitude of FFT
+
+    if nPoints % 2 > 0:  # we've got odd number of points fft
+        mdata[1:len(mdata)] = mdata[1:len(mdata)] * 2
+    else:
+        mdata[1:len(mdata) - 1] = mdata[1:len(mdata) - 1] * 2  # we've got even number of points fft
+
+    freqArray = (np.arange(0, nUniquePoints, 1.0))*(sampFreq/nPoints)
+
+    plt.plot(freqArray, mdata, color='k')
+    plt.ylabel('Amplitude (db)')
+    plt.xlabel('Frequency (Hz)')
     plt.show()
+
+    print("Plotting completed. The file has been saved in {}".format(PLOT_FILES_PATH))
+
+
+
+
+
+
 
 #   Just gives a filename some format
 def formatWavPath(filename):

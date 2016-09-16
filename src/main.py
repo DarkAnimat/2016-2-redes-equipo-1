@@ -3,16 +3,13 @@ from modulo_wav import recordWavFile
 from modulo_wav import analyzeWavFile
 from modulo_wav import obtainWavFileInfo
 
-CURRENT_VERSION = "v0.0.1"
+CURRENT_VERSION = "v0.2.0"
 
-def main():
-    print("Laboratorio de Redes 2016-2s. Universidad Santiago de Chile ("+CURRENT_VERSION+")\n")
+def test():
 
+    # Testing with A cosine signal at 440 Hz with a period of 2.3 ms.
+    obtainWavFileInfo("cos_signal")
+    playWavFile("cos_signal")
+    analyzeWavFile("cos_signal")
 
-    obtainWavFileInfo("ook")
-    analyzeWavFile("ook")
-
-
-
-
-main()
+test()
