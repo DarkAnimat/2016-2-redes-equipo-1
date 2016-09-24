@@ -143,16 +143,21 @@ def analyzeWavFile(filename):
 
     print("Now plotting. This could take some time, please wait...")
     # Plotting the signal on time domain
-    plotSignalTimeDomain(data, sampPoints, sampFreq)
+    fig = plotSignalTimeDomain(data, sampPoints, sampFreq)
+    savePlotFigure(fig, os.path.join(PATH_MAIN, "resources","plots", filename.replace(".wav","(Time Domain Plot).png")))
+
+
     # Plotting the signal on frequency domain
-    #plotSignalFrequencyDomain(data, sampFreq)
+    fig = plotSignalFrequencyDomain(data, sampFreq)
+    savePlotFigure(fig, os.path.join(PATH_MAIN, "resources","plots", filename.replace(".wav","(Freq Domain Plot).png")))
+
 
 
 def plotSignalTimeDomain(data, sampPoints, sampFreq):
 
     duration = (sampPoints / sampFreq) * 1000   # Wave duration in miliseconds
 
-    plt.figure(num=1,figsize=(14,6), dpi=100)
+    figure = plt.figure(num=1,figsize=(14,6), dpi=100)
     timeArray = np.arange(0, sampPoints, 1)
     timeArray = (timeArray / sampFreq) * 1000
     plt.plot(timeArray, data, color='b')
@@ -162,23 +167,30 @@ def plotSignalTimeDomain(data, sampPoints, sampFreq):
     plt.title('Signal (Time domain)')
     plt.grid(True)
     plt.show()
-
+    return figure
 
 def plotSignalFrequencyDomain(data, sampFreq):
 
-    # Transformada de Fourier
-    X = np.fft.fftshift(fft(data))
+    Y = fft(data)
+    L = data.size
+    P2 = abs(Y / L)
+    P1 = P2[0: L / 2 + 1]
+    P1[1:-2] = 2 * P1[1:-2]
+    temp = np.arange(0,L/2)
+    if (L%2 == 0): temp = np.append(temp,L/2)
+    f = sampFreq * temp / L;
 
-    # Magnitud y base de la transformada
-    Xm = abs(X)
-    Xf = np.unwrap(np.angle(X))*180/pi
+    #Generate the plot
+    figure = plt.figure(num=1,figsize=(14,6), dpi=100)
+    plt.plot(f, P1)
+    plt.title('Single-Sided Amplitude Spectrum of X(t)')
+    plt.xlabel('f (Hz)')
+    plt.ylabel('|P1(f)|')
+    plt.show()
+    return figure
 
-    # Base de frecuencias
 
-def nextpow2(i):
-    n = 1
-    while n < i: n *= 2
-    return n
-
+def savePlotFigure(figure, filename):
+    figure.savefig(os.path.join(PATH_MAIN, "resources","plots", filename), dpi=figure.dpi)
 
 
