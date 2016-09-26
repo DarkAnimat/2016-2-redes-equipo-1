@@ -2,18 +2,21 @@ import os
 import sys
 import logging
 import wave
-import pyaudio
+#import pyaudio
 import matplotlib.pyplot as plt
 import numpy as np
+import scipy
 from scipy.fftpack import fft, fft2
 from scipy.io import wavfile
 from math import pi
+from scipy import signal
+from scipy.signal import firwin, lfilter
 
 PATH_MAIN = os.path.normpath(os.getcwd())
 PATH_AUDIO_RESOURCES = os.path.join(PATH_MAIN,"resources","audio_files")
 PLOT_FILES_PATH = os.path.join(PATH_MAIN, "plot_files")
 
-FORMAT = pyaudio.paInt16    # Bit-Depth (Scipy supports only 16bit and 32bit)
+#FORMAT = pyaudio.paInt16    # Bit-Depth (Scipy supports only 16bit and 32bit)
 CHANNELS = 2                # Two Channels for Stereo Sound
 RATE = 44100                # 44100 Samples per Second (CD-quality)
 CHUNK = 1024                # We record 1024 bytes of data
@@ -59,72 +62,72 @@ def printWavFileInfo(wavfile):
     print(">>> Audio frames: {}".format(wavfile.getnframes()))
 
 
-def playWavFile(filename):
-    """Receives a filename and reproduce the sound of the wav file associated"""
+#def playWavFile(filename):
+  #  """Receives a filename and reproduce the sound of the wav file associated"""
 
-    wf = openWavFile(filename,"rb")
-
-    # Initializing PyAudio (Warning: Some error messages could appear. Probably not important)
-    print("Initializing PyAudio...\n(If you see messages above, it's not programs's fault.)")
-    audio = pyaudio.PyAudio()
-    print("End of PyAudio initialization.")
-
-    stream = audio.open(
-        format = audio.get_format_from_width(wf.getsampwidth()),
-        channels = wf.getnchannels(),
-        rate = wf.getframerate(),
-        output = True
-    )
-
-    data = wf.readframes(CHUNK)
-    while data != '':
-        stream.write(data)
-        data = wf.readframes(CHUNK)
-
-    stream.close()
-    audio.terminate()
-    closeWavFile(wf)
-
-def recordWavFile(record_name, record_seconds):
-    """Records a wavfile for a certain amount of seconds"""
+   # wf = openWavFile(filename,"rb")
 
     # Initializing PyAudio (Warning: Some error messages could appear. Probably not important)
-    print("Initializing PyAudio...\n(If you see messages above, it's not programs's fault.)")
-    audio = pyaudio.PyAudio()
-    print("End of PyAudio initialization.")
+#    print("Initializing PyAudio...\n(If you see messages above, it's not programs's fault.)")
+ #   audio = pyaudio.PyAudio()
+ #   print("End of PyAudio initialization.")
 
-    stream = audio.open(
-        format=FORMAT,
-        channels=CHANNELS,
-        rate=RATE,
-        input=True,
-        frames_per_buffer= CHUNK
-    )
+ #   stream = audio.open(
+  #      format = audio.get_format_from_width(wf.getsampwidth()),
+  #      channels = wf.getnchannels(),
+  #      rate = wf.getframerate(),
+  #      output = True
+  #  )
+
+   # data = wf.readframes(CHUNK)
+   # while data != '':
+   #     stream.write(data)
+   #     data = wf.readframes(CHUNK)
+
+  #  stream.close()
+  #  audio.terminate()
+   # closeWavFile(wf)
+
+#def recordWavFile(record_name, record_seconds):
+   # """Records a wavfile for a certain amount of seconds"""
+
+    # Initializing PyAudio (Warning: Some error messages could appear. Probably not important)
+ #   print("Initializing PyAudio...\n(If you see messages above, it's not programs's fault.)")
+    #audio = pyaudio.PyAudio()
+ #   print("End of PyAudio initialization.")
+
+  #  stream = audio.open(
+  #      format=FORMAT,
+  #      channels=CHANNELS,
+  #      rate=RATE,
+  #      input=True,
+  #      frames_per_buffer= CHUNK
+  #  )
 
     # Start Recording
-    print('\tNow recording...')
-    frames = []
-    for i in range(0, int(RATE / CHUNK * record_seconds)):
-        data = stream.read(CHUNK)
-        frames.append(data)
-    print('\tThe recording has ben completed')
+  #  print('\tNow recording...')
+  #  frames = []
+  #  for i in range(0, int(RATE / CHUNK * record_seconds)):
+  #      data = stream.read(CHUNK)
+  #      frames.append(data)
+  #  print('\tThe recording has ben completed')
 
     # Stop Recording
-    stream.stop_stream()
-    stream.close()
-    audio.terminate()
+#    stream.stop_stream()
+ #   stream.close()
+ #   audio.terminate()
 
     # Save Recording
-    wf = openWavFile(record_name, "wb")
-    writeWavFile(wf, audio, frames)
-    closeWavFile(wf)
+  #  wf = openWavFile(record_name, "wb")
+   # writeWavFile(wf, audio, frames)
+   # closeWavFile(wf)
 
-def writeWavFile(wavefile, audio, frames):
-    """ Writes data and audio over a wavefile """
-    wavefile.setnchannels(CHANNELS)
-    wavefile.setsampwidth(audio.get_sample_size(FORMAT))
-    wavefile.setframerate(RATE)
-    wavefile.writeframes(b''.join(frames))
+#def writeWavFile(wavefile, audio, frames):
+ #   """ Writes data and audio over a wavefile """
+ #   wavefile.setnchannels(CHANNELS)
+ #   wavefile.setsampwidth(audio.get_sample_size(FORMAT))
+ #   wavefile.setframerate(RATE)
+ #   wavefile.writeframes(b''.join(frames))
 
 
 def analyzeWavFile(filename):
@@ -133,6 +136,8 @@ def analyzeWavFile(filename):
     audioPath = formatWavPath(filename)
     sampFreq, data = wavfile.read(audioPath)
 
+    data0=data
+
     # Obtaining Sampling Points and Number of channels:
     if (len(data.shape) == 1):                  # Audio with one channel only
         sampPoints = data.shape[0]
@@ -140,6 +145,9 @@ def analyzeWavFile(filename):
         sampPoints, channels = data.shape
         data = data[:, 0]
 
+    data2=data
+
+    firFilter(data0,data2)
 
     print("Now plotting. This could take some time, please wait...")
     # Plotting the signal on time domain
@@ -193,4 +201,15 @@ def plotSignalFrequencyDomain(data, sampFreq):
 def savePlotFigure(figure, filename):
     figure.savefig(os.path.join(PATH_MAIN, "resources","plots", filename), dpi=figure.dpi)
 
+def firFilter(data0,data2):
+    t = np.linspace(-1, 1, 201)
+    ntaps=1
+    b = firwin(ntaps, [0.05, 0.95], width=0.05, pass_zero=False)
+    y=signal.lfilter(b, [1.0], data0)
+    plt.figure
+    #plt.plot(t, data2, 'b', alpha=0.75)
+    plt.plot(y, 'b')
+    plt.legend(('lfilter, once'), loc = 'best')
+    plt.grid(True)
+    plt.show()
 
