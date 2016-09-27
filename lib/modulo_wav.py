@@ -11,6 +11,8 @@ from scipy.io import wavfile
 from math import pi
 from scipy import signal
 from scipy.signal import firwin, lfilter
+from numpy import arange
+from pylab import figure, plot, grid, show
 
 PATH_MAIN = os.path.normpath(os.getcwd())
 PATH_AUDIO_RESOURCES = os.path.join(PATH_MAIN,"resources","audio_files")
@@ -136,7 +138,6 @@ def analyzeWavFile(filename):
     audioPath = formatWavPath(filename)
     sampFreq, data = wavfile.read(audioPath)
 
-    data0=data
 
     # Obtaining Sampling Points and Number of channels:
     if (len(data.shape) == 1):                  # Audio with one channel only
@@ -145,19 +146,17 @@ def analyzeWavFile(filename):
         sampPoints, channels = data.shape
         data = data[:, 0]
 
-    data2=data
-
-    firFilter(data0,data2)
+    firFilter(data)
 
     print("Now plotting. This could take some time, please wait...")
     # Plotting the signal on time domain
-    fig = plotSignalTimeDomain(data, sampPoints, sampFreq)
-    savePlotFigure(fig, os.path.join(PATH_MAIN, "resources","plots", filename.replace(".wav","(Time Domain Plot).png")))
+    #fig = plotSignalTimeDomain(data, sampPoints, sampFreq)
+    #savePlotFigure(fig, os.path.join(PATH_MAIN, "resources","plots", filename.replace(".wav","(Time Domain Plot).png")))
 
 
     # Plotting the signal on frequency domain
-    fig = plotSignalFrequencyDomain(data, sampFreq)
-    savePlotFigure(fig, os.path.join(PATH_MAIN, "resources","plots", filename.replace(".wav","(Freq Domain Plot).png")))
+    #fig = plotSignalFrequencyDomain(data, sampFreq)
+    #savePlotFigure(fig, os.path.join(PATH_MAIN, "resources","plots", filename.replace(".wav","(Freq Domain Plot).png")))
 
 
 
@@ -201,15 +200,57 @@ def plotSignalFrequencyDomain(data, sampFreq):
 def savePlotFigure(figure, filename):
     figure.savefig(os.path.join(PATH_MAIN, "resources","plots", filename), dpi=figure.dpi)
 
-def firFilter(data0,data2):
-    t = np.linspace(-1, 1, 201)
-    ntaps=1
-    b = firwin(ntaps, [0.05, 0.95], width=0.05, pass_zero=False)
-    y=signal.lfilter(b, [1.0], data0)
-    plt.figure
-    #plt.plot(t, data2, 'b', alpha=0.75)
-    plt.plot(y, 'b')
-    plt.legend(('lfilter, once'), loc = 'best')
-    plt.grid(True)
+def firFilter(data):
+    nsamples = data.size
+    t = arange(nsamples)/RATE
+    signal =data
+
+    # ------------------------------------------------
+    # Create a FIR filter and apply it to signal.
+    # ------------------------------------------------
+    # The Nyquist rate of the signal.
+    nyq_rate = RATE/2.
+
+    # The cutoff frequency of the filter: 6KHz
+    cutoff_hz = 6000.0
+
+    # Length of the filter (number of coefficients, i.e. the filter order + 1)
+    numtaps = 29
+
+    # Use firwin to create a lowpass FIR filter
+    fir_coeff = firwin(numtaps, cutoff_hz / nyq_rate)
+
+    # Use lfilter to filter the signal with the FIR filter
+    filtered_signal = lfilter(fir_coeff, 1.0, signal)
+
+    # ------------------------------------------------
+    # Plot the original and filtered signals.
+    # ------------------------------------------------
+
+    # The first N-1 samples are "corrupted" by the initial conditions
+    warmup = numtaps - 1
+
+    # The phase delay of the filtered signal
+    delay = (warmup / 2)/RATE
+
+    figure(1)
+    # Plot the original signal
+    plt.plot(t, signal)
+    # Plot the filtered signal, shifted to compensate for the phase delay
+    plt.plot(t, filtered_signal, 'r-')
+
+    plt.ylabel('Amplitude (db)')
+    plt.xlabel('Time (ms)')
+    plt.title('Signal Time Filter')
+    
+    grid(True)
     plt.show()
 
+    print_values_fir('signal', signal)
+    print_values_fir('filtered_signal', filtered_signal)
+
+
+def print_values_fir(label, values):
+    var = "float32_t %s[%d]" % (label, len(values))
+    print
+    "%-30s = {%s}" % (var, ', '.join(["%+.10f" % x for x in values]))
