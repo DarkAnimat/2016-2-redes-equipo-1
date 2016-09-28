@@ -15,7 +15,7 @@ El presente codigo se compone de multiples archivos python, los cuales se divide
 	Plotea el espectrograma de una onda.
 
 2.3.- testing1.py:
-	Importando las funciones del archivo "modulo_wav.py", esta parte del programa se encarga de plotear todos los graficos asociados a un archivo de sonido ingresado. "testing1.py" sera usado como el archivo de prueba para todas las funcionalidades de la primera etapa del proyecto (filtro y grafica).
+	Importando las funciones del archivo "modulo_wav.py", esta parte del programa se encarga de plotear todos los graficos asociados a un archivo de sonido ingresado. "testing1.py" sera usado como el archivo de prueba para todas las funcionalidades de la primera etapa del proyecto.
 
 
 
