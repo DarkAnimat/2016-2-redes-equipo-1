@@ -9,14 +9,11 @@ El presente codigo se compone de multiples archivos python, los cuales se divide
 
 2. **Archivos de funciones**
 	 
-* modulo_wav.py:
-	Contiene funciones asociadas al manejo de archivos de sonido, filtrar y graficar señales. Estas incluyen obtener el "Wave Object" asociado a un archivo de sonido (en modo lectura o escritura), reproducir "wavefiles" asociados a un archivo de sonido, grabar un "wavefile" por una cantidad de segundos, escribir datos y audio sobre un "wavefile", plotear señales en el dominio del tiempo y frecuencia asi como espectrogramas. Tambien se encuentra en este archivo la funcion de filtro "FIR", la cual aplica aquel filtro a una señal.
+* modulo_wav.py: Contiene funciones asociadas al manejo de archivos de sonido, filtrar y graficar señales. Estas incluyen obtener el "Wave Object" asociado a un archivo de sonido (en modo lectura o escritura), reproducir "wavefiles" asociados a un archivo de sonido, grabar un "wavefile" por una cantidad de segundos, escribir datos y audio sobre un "wavefile", plotear señales en el dominio del tiempo y frecuencia asi como espectrogramas. Tambien se encuentra en este archivo la funcion de filtro "FIR", la cual aplica aquel filtro a una señal.
 
-* spectrogram.py
-	Plotea (grafica) el espectrograma de una onda.
+* spectrogram.py: Plotea (grafica) el espectrograma de una onda.
 
-* testing1.py
-	Importando las funciones del archivo "modulo_wav.py", esta parte del programa se encarga de plotear todos los graficos asociados a un archivo de sonido ingresado. "testing1.py" sera usado como el archivo de prueba para todas las funcionalidades de la primera etapa del proyecto (filtro y grafica).
+* testing1.py: Importando las funciones del archivo "modulo_wav.py", esta parte del programa se encarga de plotear todos los graficos asociados a un archivo de sonido ingresado. "testing1.py" sera usado como el archivo de prueba para todas las funcionalidades de la primera etapa del proyecto (filtro y grafica).
 
 
 
