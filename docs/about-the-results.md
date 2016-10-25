@@ -8,7 +8,7 @@ Ejecutando el archivo de programa “testing1.py”, se obtienen las siguientes 
 	* Sin filtro
 	![Grafica dominio frecuencia - sin filtro](https://github.com/redes-usach/redes-equipo-1/blob/master/resources/plots/ook(Freq Domain Plot).png)
 	* Con filtro
-	![Grafica dominio frecuencia - con filtro](https://github.com/redes-usach/redes-equipo-1/blob/master/resources/plots/ookFiltered (Freq Domain Plot.png)
+	![Grafica dominio frecuencia - con filtro](https://github.com/redes-usach/redes-equipo-1/blob/master/resources/plots/ookFiltered(Freq Domain Plot).png)
 
 
 	Resultados: Se puede apreciar como los valores de frecuencias mas altas son despreciadas por el filtro, dejando valores entre los 0 y 3000 Hz. Se puede observar que aproximadamente en los 2000 Hz, se encuentran los valores relevantes del audio, el resto siendo ruido en su mayoria.
