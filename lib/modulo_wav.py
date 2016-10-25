@@ -291,7 +291,7 @@ def save_plot_figure(figure, filename, title):
 
 
 def fir_filter(data, samp_fre):
-    """Fir filter, low band"""
+    """Fir filter, low and high band"""
     nsamples = data.size
     t = np.arange(nsamples) / RATE
     signal = data
@@ -311,8 +311,14 @@ def fir_filter(data, samp_fre):
     # Use firwin to create a lowpass FIR filter
     fir_coeff = firwin(numtaps, cutoff_hz / nyq_rate)
 
-    # Use lfilter to filter the signal with the FIR filter
+    # Use lfilter to filter the signal with the low FIR filter
     filtered_signal = lfilter(fir_coeff, 1.0, signal)
+
+    # Use firwin to create a highpass FIR filter
+    fir_coeff2 = firwin(numtaps, 2500 / nyq_rate, pass_zero=False)
+
+    # Use lfilter to filter the filtered signal with the high FIR filter
+    filtered_signal2 = lfilter(fir_coeff2, 1.0, filtered_signal)
 
     # ------------------------------------------------
     # Plot the original and filtered signals.
@@ -324,7 +330,7 @@ def fir_filter(data, samp_fre):
     # The phase delay of the filtered signal
     delay = (warmup / 2) / RATE
 
-    return filtered_signal
+    return filtered_signal2
 
 
 def obtain_cutoff_freq(data, samp_freq):
