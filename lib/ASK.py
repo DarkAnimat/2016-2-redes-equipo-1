@@ -4,15 +4,17 @@ import matplotlib.pyplot as plt
 def ASK_Modulation(code):
 	dim = 1000
 	Vx = []
-	for i in range (1,len(code)):
+	largo = (len(code))
+	for i in range (largo):
 		f = np.ones(dim)
 		x = f * code[i]
 		Vx = np.concatenate((Vx,x))
-	plt.subplot(3,1,1)
-	plt.plot(Vx)
+
 
 	dim2 = len(Vx)
-	t = np.linspace(0,5,dim2)
+	t = np.linspace(0,largo,dim2)
+	plt.subplot(3,1,1)
+	plt.plot(t,Vx)
 	frec = 5
 	plt.subplot(3,1,2)
 	Am = 2
