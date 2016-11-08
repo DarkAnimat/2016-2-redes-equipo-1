@@ -1,4 +1,5 @@
 from lib import ASK
+from lib import modulo_wav as mw
 import matplotlib.pyplot as plt
 
 # REAL DATA STREAM EXAMPLE
@@ -13,7 +14,6 @@ carrier_signal = ASK.obtain_carrier_signal(time_vector)                 # Carrie
 ###########################
 # OOK MODULATION
 ###########################
-
 modulated_signal_1 = ASK.obtain_modulated_signal(modulation_signal, carrier_signal) # Modulated signal (OOK)
 
 # FIRST PLOT: modulation signal
@@ -42,6 +42,22 @@ plt.plot(time_vector, modulated_signal_1)
 
 plt.show()
 
+x1, y1 = mw.obtain_signal_frequency_domain_data(modulation_signal, ASK.PULSE_FREQUENCY)
+x2, y2 = mw.obtain_signal_frequency_domain_data(modulated_signal_1, ASK.PULSE_FREQUENCY)
+
+plt.subplot(2,1,1)
+plt.title('Modulation Signal (Frequency Domain)')
+plt.xlabel('f (Hz)')
+plt.ylabel('|P1(f)|')
+plt.plot(x1,y1)
+plt.subplot(2,1,2)
+plt.title('Modulated Signal (Frequency Domain)')
+plt.xlabel('f (Hz)')
+plt.ylabel('|P1(f)|')
+plt.plot(x2,y2)
+plt.show()
+exit(1)
+### Frequency Graph
 
 
 ###########################
@@ -78,3 +94,4 @@ plt.xlabel("Duration (Seconds)")
 plt.plot(time_vector, modulated_signal_2)
 
 plt.show()
+
