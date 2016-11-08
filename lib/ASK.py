@@ -53,8 +53,6 @@ def obtain_time_vector(modulation_signal):
 	bits_quantity = carrier_sampling_points / PULSE_SAMPLING_POINTS
 	duration = bits_quantity * ( 1 / PULSE_FREQUENCY )
 	Vt = np.linspace(0, duration, carrier_sampling_points)
-	print("duration1 = ", duration)
-
 	return Vt
 
 
