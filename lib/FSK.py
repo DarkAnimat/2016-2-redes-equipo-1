@@ -7,8 +7,8 @@ from numpy import cos as COS
 
 
 CARRIER_FREQUENCY_0 = 10
-CARRIER_FREQUENCY_1 = 20
-PULSE_FREQUENCY = 3
+CARRIER_FREQUENCY_1 = 11
+PULSE_FREQUENCY = 1
 PULSE_SAMPLING_POINTS = 500
 
 
@@ -71,4 +71,26 @@ def obtain_modulated_signal(modulation_signal, carrier_signal_0, carrier_signal_
     modulated_signal = np.array(modulated_signal)
     return modulated_signal
 
+
+
+def bfsk_demodulation(received_signal):
+    time_vector = obtain_time_vector(received_signal)
+    carrier_signal_0 = obtain_carrier_signal(CARRIER_FREQUENCY_0, time_vector)
+    carrier_signal_1 = obtain_carrier_signal(CARRIER_FREQUENCY_1, time_vector)
+    temp_0 = received_signal * carrier_signal_0
+    temp_1 = received_signal * carrier_signal_1
+    data_quantity = len(received_signal)
+    Vx = []
+
+    for i in range(0, data_quantity, PULSE_SAMPLING_POINTS):
+        sum = 0
+        for j in range(0, PULSE_SAMPLING_POINTS):
+            sum += (temp_0[i+j] - temp_1[i+j])
+        if (sum > 0):
+            Vx.append("0")
+        else:
+            Vx.append("1")
+
+    print(Vx)
+    return ''.join(Vx)
 
