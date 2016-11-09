@@ -7,6 +7,7 @@ from scipy.fftpack import fft
 from scipy.io import wavfile
 from pylab import grid
 from scipy.signal import firwin, lfilter
+import math
 
 PATH_MAIN = os.path.normpath(os.getcwd())
 PATH_AUDIO_RESOURCES = os.path.join(PATH_MAIN, "resources", "audio_files")
@@ -225,6 +226,17 @@ def plot_signal_time_domain(data, samp_points, samp_freq, holdplot):
     if (not(holdplot)) : plt.show()
     return figure
 
+def obtain_signal_frequency_domain_data(data, samp_freq):
+    dataLen = len(data)  # Se obtiene el largo maximo de la señal, N
+    transf = fft(data)  # Se obtiene la transformada rapida
+    k = np.arange(dataLen)  # Corresponden a los n valores de la TDF
+    T = dataLen / samp_freq  # Se calcula el periodo
+    frq = k / T  # Se obtiene la frecuencia para los k valores
+    maxRange = int(math.ceil((dataLen + 1) / 2.0))  # La funcion fft de la biblioteca numpy define obtener hasta la mitad del largo, para obtener los valores positivos de la señal
+    frq = frq[0:maxRange]  # Se evaluan cada frecuencia, cada frec * n/N
+    transf = transf[0:maxRange]  # Se obtienen solo los valores positivos de la frecuencia
+    transf = abs(transf)  # Se quitan los valores negativos de amplitud
+    return frq, transf
 
 def plot_signal_frequency_domain(data, samp_freq, holdplot):
     """ Plot a Signal in the Frequency Domain
@@ -237,22 +249,19 @@ def plot_signal_frequency_domain(data, samp_freq, holdplot):
     """
 
     # Preparing data
-    y = fft(data)
-    nfft = data.size
-    p2 = abs(y / nfft)
-    p1 = p2[0: nfft / 2 + 1]
-    p1[1:-2] = 2 * p1[1:-2]
-    temp = np.arange(0, nfft/2)
-    if nfft % 2 == 0:
-        temp = np.append(temp, nfft/2)
-    f = samp_freq * temp / nfft
-
-    # Generate the plot
+    dataLen = len(data)  # Se obtiene el largo maximo de la señal, N
+    transf = fft(data)  # Se obtiene la transformada rapida
+    k = np.arange(dataLen)  # Corresponden a los n valores de la TDF
+    T = dataLen / samp_freq  # Se calcula el periodo
+    frq = k / T  # Se obtiene la frecuencia para los k valores
+    maxRange = int(math.ceil((dataLen + 1) / 2.0))  # La funcion fft de la biblioteca numpy define obtener hasta la mitad del largo, para obtener los valores positivos de la señal
+    frq = frq[0:maxRange]  # Se evaluan cada frecuencia, cada frec * n/N
+    transf = transf[0:maxRange]  # Se obtienen solo los valores positivos de la frecuencia
+    transf = abs(transf)  # Se quitan los valores negativos de amplitud
     figure = plt.figure(figsize=(14, 6), dpi=100)
-    plt.plot(f, p1)
-    plt.title('Signal (Frequency Domain)')
-    plt.xlabel('f (Hz)')
-    plt.ylabel('|P1(f)|')
+    plt.plot(frq, transf, color='b')  # Se configuran los ejes y el color de la grafica
+    plt.xlabel('Frecuencia')
+    plt.ylabel('Amplitud')
     if (not(holdplot)) : plt.show()
     return figure
 
