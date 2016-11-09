@@ -3,10 +3,10 @@ from numpy import pi as PI
 from numpy import cos as COS
 
 CARRIER_AMPLITUDE_0 = 0
-CARRIER_AMPLITUDE_1 = 5
-CARRIER_FREQUENCY = 5
+CARRIER_AMPLITUDE_1 = 10
+CARRIER_FREQUENCY = 20
 PULSE_FREQUENCY = 2
-PULSE_SAMPLING_POINTS = 100
+PULSE_SAMPLING_POINTS = 500
 
 def ask_modulation(datastream):
 	modulation_signal = obtain_modulation_signal(datastream)
@@ -73,5 +73,21 @@ def obtain_modulated_signal(modulation_signal, carrier_signal):
 	modulated_signal = np.array(modulated_signal)
 	return modulated_signal
 
+def demodulate_signal(modulated_signal):
+    time_vector = obtain_time_vector(modulated_signal)
+    carrier_signal = obtain_carrier_signal(time_vector)
+    temp = modulated_signal * carrier_signal
 
+    Vx = []
+    for i in range(0, len(temp), PULSE_SAMPLING_POINTS):
+        sum = 0
+        for j in range(0, PULSE_SAMPLING_POINTS):
+            sum += temp[i]
+        diff0 = abs(CARRIER_AMPLITUDE_0 * PULSE_SAMPLING_POINTS - sum)
+        diff1 = abs(CARRIER_AMPLITUDE_1 * PULSE_SAMPLING_POINTS - sum)
+        if (diff0 <= diff1):
+            Vx.append("0")
+        else:
+            Vx.append("1")
+    return ''.join(Vx)
 
