@@ -2,12 +2,14 @@
 ###### Import's ######
 ##################
 import numpy as np
+from scipy import signal
 from numpy import pi as PI
 from numpy import cos as COS
 
 
-CARRIER_FREQUENCY_0 = 10
-CARRIER_FREQUENCY_1 = 11
+
+CARRIER_FREQUENCY_0 = 5
+CARRIER_FREQUENCY_1 = 10
 PULSE_FREQUENCY = 1
 PULSE_SAMPLING_POINTS = 500
 
@@ -71,9 +73,38 @@ def obtain_modulated_signal(modulation_signal, carrier_signal_0, carrier_signal_
     modulated_signal = np.array(modulated_signal)
     return modulated_signal
 
+import matplotlib.pyplot as plt
+
+def bfsk_correlation(received_signal):
+    time_vector = obtain_time_vector(received_signal)
+    carrier_signal_0 = obtain_carrier_signal(CARRIER_FREQUENCY_0, time_vector[0:PULSE_SAMPLING_POINTS])
+    carrier_signal_1 = obtain_carrier_signal(CARRIER_FREQUENCY_1, time_vector[0:PULSE_SAMPLING_POINTS])
+    corr_0 = signal.correlate(received_signal, carrier_signal_0, mode='same') / PULSE_SAMPLING_POINTS
+    corr_1 = signal.correlate(received_signal, carrier_signal_1, mode='same') / PULSE_SAMPLING_POINTS
+
+    plt.subplot(3,1,1)
+    plt.plot(time_vector, received_signal)
+    plt.subplot(3, 1, 2)
+    plt.plot(time_vector, corr_0)
+    plt.subplot(3, 1, 3)
+    plt.plot(time_vector, corr_1)
+    plt.show()
+
+    data_quantity = len(received_signal)
+    Vx = []
+
+    for i in range(0, data_quantity, PULSE_SAMPLING_POINTS):
+        sum = 0
+        for j in range(0, PULSE_SAMPLING_POINTS):
+            sum += (corr_0[i + j] - corr_1[i + j])
+        if (sum <= 0):
+            Vx.append("0")
+        else:
+            Vx.append("1")
+    return ''.join(Vx)
 
 
-def bfsk_demodulation(received_signal):
+def bfsk_coherent_demodulation(received_signal):
     time_vector = obtain_time_vector(received_signal)
     carrier_signal_0 = obtain_carrier_signal(CARRIER_FREQUENCY_0, time_vector)
     carrier_signal_1 = obtain_carrier_signal(CARRIER_FREQUENCY_1, time_vector)
