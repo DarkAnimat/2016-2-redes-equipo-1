@@ -291,12 +291,12 @@ def plot_signal_spectogram(data, samp_points, samp_freq, holdplot):
     return figure
 
 
-def save_plot_figure(figure, filename, title):
+def save_plot_figure(figure, path, title):
     """ Just saves a  plotfigure into resources/plots"""
 
-    if ".wav" in filename:
-        filename = filename.replace(".wav","")
-    figure.savefig(os.path.join(PATH_MAIN, "resources", "plots", filename + title + ".png"), dpi=figure.dpi)
+    if ".wav" in path:
+        filename = path.replace(".wav","")
+    figure.savefig(os.path.join(path + title + ".png"), dpi=figure.dpi)
 
 
 def fir_filter(data, samp_fre):
@@ -349,9 +349,4 @@ def obtain_cutoff_freq(data, samp_freq):
     p1[1:-2] = 2 * p1[1:-2]
     return f[np.argmax(abs(p1))]/np.sqrt(2)
 
-
-def write_wav_file(filename, data, sampfreq):
-    "Write wav file "
-    path = format_wav_path(filename)
-    wavfile.write(path, sampfreq, np.int16(data))
 
