@@ -51,9 +51,7 @@ def open_wav_file(filename, mode):
         :return: Wave Object (Wave_read or Wave_write)
 
     """
-
-    path = format_wav_path(filename)
-    wf = wave.openfp(path, mode)
+    wf = wave.openfp(filename, mode)
     return wf
 
 
@@ -64,7 +62,6 @@ def close_wav_file(wavfile):
         :return: Nothing
 
     """
-
     wavfile.close()
     print("The wavfile has ben closed.")
 
@@ -159,14 +156,13 @@ def record_wav_file(record_name, record_seconds):
     audio.terminate()
 
     # Save Recording
-    wf = open_wav_file(record_name, "wb")
+    wf = open_wav_file(record_name, "w")
     write_wav_file(wf, audio, frames)
     close_wav_file(wf)
 
 
 def write_wav_file(wavefile, audio, frames):
     """ Writes data and audio over a wavefile """
-
     wavefile.setnchannels(CHANNELS)
     wavefile.setsampwidth(audio.get_sample_size(FORMAT))
     wavefile.setframerate(RATE)
@@ -175,9 +171,7 @@ def write_wav_file(wavefile, audio, frames):
 
 def analyze_wav_file(filename):
     """Just print some graphs (Works only for int16)"""
-
-    path = format_wav_path(filename)
-    samp_freq, data = wavfile.read(path)
+    samp_freq, data = wavfile.read(filename)
 
     # Obtaining Sampling Points and Number of channels:
     if len(data.shape) == 1:                  # Audio with one channel only
@@ -349,9 +343,4 @@ def obtain_cutoff_freq(data, samp_freq):
     p1[1:-2] = 2 * p1[1:-2]
     return f[np.argmax(abs(p1))]/np.sqrt(2)
 
-
-def write_wav_file(filename, data, sampfreq):
-    "Write wav file "
-    path = format_wav_path(filename)
-    wavfile.write(path, sampfreq, np.int16(data))
 
