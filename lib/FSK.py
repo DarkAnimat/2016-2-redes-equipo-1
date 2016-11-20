@@ -2,11 +2,49 @@ import numpy as np
 from scipy import signal
 from numpy import pi as PI
 from numpy import cos as COS
+import math
+import matplotlib.pyplot as plt
 
-CARRIER_FREQUENCY_0 = 5  # Carrier's frequency for the 0-bit
-CARRIER_FREQUENCY_1 = 10  # Carrier's frequency for the 1-bit
-PULSE_FREQUENCY = 1  # Frequency of signal pulse (bit on signal)
-PULSE_SAMPLING_POINTS = 500  # Point of sampling for each pulse
+# Human hearing goes from 20 Hz to 20,000 Hz (3.183 to 31830)
+CARRIER_AMPLITUDE = 100                          # Carrier's amplitude
+CARRIER_FREQUENCY_0 = int( 7000 / (2 * PI))      # Carrier's frequency for the 0-bit
+CARRIER_FREQUENCY_1 = int( 12500 / (2 * PI))     # Carrier's frequency for the 1-bit
+PULSE_FREQUENCY = 2              # Frequency of signal pulse (bit on signal)
+SAMPLING_FREQUENCY = 44100    # Frequency of signal sample
+
+def check_sampling_points_graph():
+    pulse_duration = 1/PULSE_FREQUENCY
+    wave_duration = 1/CARRIER_FREQUENCY_0
+    points_per_pulse = math.ceil(SAMPLING_FREQUENCY * (1 / PULSE_FREQUENCY))
+    number_of_waves = pulse_duration/wave_duration
+    points_per_wave = math.ceil(points_per_pulse/number_of_waves)
+    time_vector =  np.linspace(0, pulse_duration, points_per_pulse)
+    carrier_signal =  COS(2 * PI * CARRIER_FREQUENCY_0 * time_vector)
+
+    print("pulse duration is: {} seconds".format(pulse_duration))
+    print("wave duration is: {} seconds".format(wave_duration))
+    print("number of points per wave is: {} points approximately".format(points_per_wave))
+
+    plt.subplot(2,1,1)
+    plt.plot(time_vector, carrier_signal)
+    plt.title("Carrier signal from 0 to {} secs (Pulse)".format(pulse_duration))
+    plt.ylabel("Amplitude [db]")
+    plt.xlim(0,pulse_duration)
+
+    plt.subplot(2,1,2)
+    plt.plot(time_vector[0:points_per_wave], carrier_signal[0:points_per_wave])
+    plt.title("Carrier wave from 0 to {} secs (Wave)".format(wave_duration))
+    plt.ylabel("Amplitude [db]")
+    plt.xlabel("Time [seconds]")
+    plt.xlim(0,wave_duration)
+    plt.show()
+
+def obtain_signal_duration(signal):
+    signal_points = len(signal)
+    number_of_pulses = signal_points / (SAMPLING_FREQUENCY/PULSE_FREQUENCY)
+    pulse_duration = 1 / PULSE_FREQUENCY
+    signal_duration = pulse_duration * number_of_pulses
+    return int(signal_duration)
 
 
 def bfsk_modulation(datastream):
@@ -21,6 +59,9 @@ def bfsk_modulation(datastream):
     carrier_signal_1 = obtain_carrier_signal(CARRIER_FREQUENCY_1, time_vector)
     return obtain_modulated_signal(modulation_signal, carrier_signal_0, carrier_signal_1)
 
+def set_carrier_amplitude(value):
+    global CARRIER_AMPLITUDE
+    CARRIER_AMPLITUDE = value
 
 def set_carrier_freq_0(value):
     """ Set the frequency of the carrier signal for the 0-bit.
@@ -52,14 +93,14 @@ def set_pulse_frequency(value):
     PULSE_FREQUENCY = value
 
 
-def set_sampling_points(value):
+def set_sampling_frequency(value):
     """ Set the quantity of sampling point for each pulse in modulation signal.
 
         :param value: new value for modulated signal pulse's frequency.
         :return None:
     """
-    global PULSE_SAMPLING_POINTS
-    PULSE_SAMPLING_POINTS = value
+    global SAMPLING_FREQUENCY
+    SAMPLING_FREQUENCY = value
 
 
 def obtain_modulation_signal(datastream):
@@ -68,9 +109,12 @@ def obtain_modulation_signal(datastream):
         :param datastream: Stream of data.
         :return: Modulation signal.
     """
+
+    points_per_pulse = SAMPLING_FREQUENCY / PULSE_FREQUENCY
+
     Vx = []
     for bit in datastream:
-        x = np.ones(PULSE_SAMPLING_POINTS) * int(bit)
+        x = np.ones(points_per_pulse) * int(bit)
         Vx = np.concatenate((Vx, x))
     return Vx
 
@@ -81,10 +125,9 @@ def obtain_time_vector(modulation_signal):
         :param modulation_signal: Modulation signal.
         :return: Time vector.
     """
-    carrier_sampling_points = len(modulation_signal)
-    bits_quantity = carrier_sampling_points / PULSE_SAMPLING_POINTS
-    duration = bits_quantity * (1 / PULSE_FREQUENCY)
-    Vt = np.linspace(0, duration, carrier_sampling_points)
+    duration = obtain_signal_duration(modulation_signal)
+    signal_points = len(modulation_signal)
+    Vt = np.linspace(0, duration, signal_points)
     return Vt
 
 
@@ -95,7 +138,7 @@ def obtain_carrier_signal(frequency, time_vector):
         :param time_vector: Vector of sampling times for the carrier.
         :return: Carrier signal.
     """
-    return COS(2 * PI * frequency * time_vector)
+    return CARRIER_AMPLITUDE * COS(2 * PI * frequency * time_vector)
 
 
 def obtain_modulated_signal(modulation_signal, carrier_signal_0, carrier_signal_1):
@@ -116,6 +159,7 @@ def obtain_modulated_signal(modulation_signal, carrier_signal_0, carrier_signal_
     modulated_signal = np.array(modulated_signal)
     return modulated_signal
 
+import matplotlib.pyplot as plt
 
 def bfsk_correlation(received_signal):
     """ Makes a cross-correlation between the received_signal and it's carrier and obtains the original data.
@@ -124,23 +168,79 @@ def bfsk_correlation(received_signal):
         :return: Stream of data
     """
     time_vector = obtain_time_vector(received_signal)
-    carrier_signal_0 = obtain_carrier_signal(CARRIER_FREQUENCY_0, time_vector[0:PULSE_SAMPLING_POINTS])
-    carrier_signal_1 = obtain_carrier_signal(CARRIER_FREQUENCY_1, time_vector[0:PULSE_SAMPLING_POINTS])
-    corr_0 = signal.correlate(received_signal, carrier_signal_0, mode='same') / PULSE_SAMPLING_POINTS
-    corr_1 = signal.correlate(received_signal, carrier_signal_1, mode='same') / PULSE_SAMPLING_POINTS
+
+    pulse_duration = 1/PULSE_FREQUENCY
+    wave_duration = 1/CARRIER_FREQUENCY_0
+    points_per_pulse = math.ceil(SAMPLING_FREQUENCY * (1 / PULSE_FREQUENCY))
+    points_per_wave_0 = math.ceil(points_per_pulse/(CARRIER_FREQUENCY_0/PULSE_FREQUENCY))
+    points_per_wave_1 = math.ceil(points_per_pulse/(CARRIER_FREQUENCY_1/PULSE_FREQUENCY))
+
+
+    time_vector_0 = time_vector[0: points_per_wave_0]
+    time_vector_1 = time_vector[0: points_per_wave_1]
+
+
+
+    carrier_signal_0 = obtain_carrier_signal(CARRIER_FREQUENCY_0, time_vector_0)
+    carrier_signal_1 = obtain_carrier_signal(CARRIER_FREQUENCY_1, time_vector_1)
+
+
+    corr_0 = signal.correlate(received_signal, carrier_signal_0, mode='same') / SAMPLING_FREQUENCY
+    corr_1 = signal.correlate(received_signal, carrier_signal_1, mode='same') / SAMPLING_FREQUENCY
+
+    ####################33
+    # FILTRAR AQUI
+    ###################
+
+
+
+    data_quantity = len(received_signal)
+    Vx = []
+    # COMPARISON
+    for i in range(0, data_quantity, SAMPLING_FREQUENCY):
+
+        sum0 = 0
+        sum1 = 0
+        for j in range(0, SAMPLING_FREQUENCY):
+            sum0 += abs(corr_0[i+j])
+            sum1 += abs(corr_1[i+j])
+
+        if sum0 >= sum1:
+            Vx.append("0")
+        else:
+            Vx.append("1")
+
+    return ''.join(Vx), corr_0, corr_1, carrier_signal_0, carrier_signal_1
+
+def bfsk_correlation2(received_signal):
+    """ Makes a cross-correlation between the received_signal and it's carrier and obtains the original data.
+
+        :param received_signal: Signal to be demodulated with correlations.
+        :return: Stream of data
+    """
+    time_vector = obtain_time_vector(received_signal)
+    carrier_signal_0 = obtain_carrier_signal(CARRIER_FREQUENCY_0, time_vector[0:SAMPLING_FREQUENCY])
+    carrier_signal_1 = obtain_carrier_signal(CARRIER_FREQUENCY_1, time_vector[0:SAMPLING_FREQUENCY])
+    corr_0 = signal.correlate(received_signal, carrier_signal_0, mode='same') / SAMPLING_FREQUENCY
+    corr_1 = signal.correlate(received_signal, carrier_signal_1, mode='same') / SAMPLING_FREQUENCY
 
     data_quantity = len(received_signal)
     Vx = []
 
-    for i in range(0, data_quantity, PULSE_SAMPLING_POINTS):
-        sum = 0
-        for j in range(0, PULSE_SAMPLING_POINTS):
-            sum += (corr_0[i + j] - corr_1[i + j])
-        if sum <= 0:
+    for i in range(0, data_quantity, SAMPLING_FREQUENCY):
+
+        sum0 = 0
+        sum1 = 0
+        for j in range(0, SAMPLING_FREQUENCY):
+            sum0 += abs(corr_0[i+j])
+            sum1 += abs(corr_1[i+j])
+
+        if sum0 >= sum1:
             Vx.append("0")
         else:
             Vx.append("1")
-    return ''.join(Vx)
+
+    return ''.join(Vx), corr_0, corr_1, carrier_signal_0, carrier_signal_1
 
 
 def bfsk_coherent_demodulation(received_signal):
@@ -158,9 +258,9 @@ def bfsk_coherent_demodulation(received_signal):
     data_quantity = len(received_signal)
     Vx = []
 
-    for i in range(0, data_quantity, PULSE_SAMPLING_POINTS):
+    for i in range(0, data_quantity, SAMPLING_FREQUENCY):
         sum = 0
-        for j in range(0, PULSE_SAMPLING_POINTS):
+        for j in range(0, SAMPLING_FREQUENCY):
             sum += (temp_0[i + j] - temp_1[i + j])
         if sum > 0:
             Vx.append("0")
@@ -168,3 +268,6 @@ def bfsk_coherent_demodulation(received_signal):
             Vx.append("1")
 
     return ''.join(Vx)
+
+
+
