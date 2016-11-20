@@ -4,6 +4,7 @@ from numpy import pi as PI
 from numpy import cos as COS
 import math
 import matplotlib.pyplot as plt
+from lib import low_pass_filter as low_filter
 
 # Human hearing goes from 20 Hz to 20,000 Hz (3.183 to 31830)
 CARRIER_AMPLITUDE = 100                          # Carrier's amplitude
@@ -159,8 +160,6 @@ def obtain_modulated_signal(modulation_signal, carrier_signal_0, carrier_signal_
     modulated_signal = np.array(modulated_signal)
     return modulated_signal
 
-import matplotlib.pyplot as plt
-
 def bfsk_correlation(received_signal):
     """ Makes a cross-correlation between the received_signal and it's carrier and obtains the original data.
 
@@ -185,23 +184,32 @@ def bfsk_correlation(received_signal):
     carrier_signal_1 = obtain_carrier_signal(CARRIER_FREQUENCY_1, time_vector_1)
 
 
-    corr_0 = signal.correlate(received_signal, carrier_signal_0, mode='same') / SAMPLING_FREQUENCY
-    corr_1 = signal.correlate(received_signal, carrier_signal_1, mode='same') / SAMPLING_FREQUENCY
+    corr_0 = signal.correlate(received_signal, carrier_signal_0, mode='same')
+    corr_1 = signal.correlate(received_signal, carrier_signal_1, mode='same')
 
     ####################33
     # FILTRAR AQUI
     ###################
 
+    #received_signal = low_filter.filter(received_signal,SAMPLING_FREQUENCY,max(CARRIER_FREQUENCY_0,CARRIER_FREQUENCY_1))
+    corr_0 = low_filter.filter(corr_0,SAMPLING_FREQUENCY,CARRIER_FREQUENCY_0)
+    corr_1 = low_filter.filter(corr_1,SAMPLING_FREQUENCY,CARRIER_FREQUENCY_1)
 
+    #analytic_signal_0 = signal.hilbert(corr_0)
+    #corr_0 = np.abs(analytic_signal_0)
+
+    #analytic_signal_1 = signal.hilbert(corr_1)
+    #corr_1 = np.abs(analytic_signal_1)
 
     data_quantity = len(received_signal)
     Vx = []
     # COMPARISON
-    for i in range(0, data_quantity, SAMPLING_FREQUENCY):
+    distance = int(SAMPLING_FREQUENCY/PULSE_FREQUENCY)
+    for i in range(0, data_quantity, distance):
 
         sum0 = 0
         sum1 = 0
-        for j in range(0, SAMPLING_FREQUENCY):
+        for j in range(0, distance):
             sum0 += abs(corr_0[i+j])
             sum1 += abs(corr_1[i+j])
 
@@ -210,7 +218,7 @@ def bfsk_correlation(received_signal):
         else:
             Vx.append("1")
 
-    return ''.join(Vx), corr_0, corr_1, carrier_signal_0, carrier_signal_1
+    return ''.join(Vx), corr_0, corr_1, carrier_signal_0, carrier_signal_1, received_signal
 
 def bfsk_correlation2(received_signal):
     """ Makes a cross-correlation between the received_signal and it's carrier and obtains the original data.
@@ -240,7 +248,7 @@ def bfsk_correlation2(received_signal):
         else:
             Vx.append("1")
 
-    return ''.join(Vx), corr_0, corr_1, carrier_signal_0, carrier_signal_1
+    return ''.join(Vx), corr_0, corr_1, carrier_signal_0, carrier_signal_1, received_signal
 
 
 def bfsk_coherent_demodulation(received_signal):
@@ -268,6 +276,3 @@ def bfsk_coherent_demodulation(received_signal):
             Vx.append("1")
 
     return ''.join(Vx)
-
-
-

@@ -97,7 +97,6 @@ def plot_D(received_signal, corr_0, corr_1, carr_0, carr_1, time_vector):
     plt.subplot(5,1,3)
     plt.title("Correlation for 1-bit")
     plt.ylabel("Amplitude")
-    plt.ylim(-lim, lim)
     plt.plot(time_vector, corr_0)
 
     # SECOND PLOT: correlation for 0-bit
@@ -110,18 +109,29 @@ def plot_D(received_signal, corr_0, corr_1, carr_0, carr_1, time_vector):
     plt.subplot(5,1,5)
     plt.title("Correlation for 1-bit")
     plt.ylabel("Amplitude")
-    plt.ylim(-lim, lim)
     plt.plot(time_vector, corr_1)
-
-
-
-
 
     plt.show()
 
+
+def plot_E(original_data, received_data, time_vector):
+    # FIRST PLOT: modulated signal spectogram
+    plt.subplot(2,1,1)
+    plt.plot(time_vector, original_data)
+    plt.ylabel('Frequency [Hz]')
+
+    # SECOND PLOT: modulated singal spectogram
+    plt.subplot(2,1,2)
+    plt.plot(time_vector, received_data)
+    plt.ylabel('Frequency [Hz]')
+    plt.xlabel('Time [sec]')
+
+    plt.show()
+
+
 ### REAL DATA STREAM EXAMPLE
 datastream_example = "011000001000100010000000000000000100000000000000000000000000000010100000000000000000000000000000000000000000000000000000000000000000000000000000100000100000010100001010000100100001101010100010001001101010101000101100001011000010100110101000001010010010101111010111110"
-datastream_example = datastream_example[0:2]
+datastream_example = datastream_example[0:10]
 
 ### SETTING DATA FOR TESTING
 FSK.set_carrier_freq_0(8)
@@ -154,6 +164,9 @@ signal_with_noise = modulated_signal + noise                                    
 # plot_C(modulated_signal=modulated_signal, signal_with_noise=signal_with_noise)
 
 ### DEMODULATION
-demodulated_data, corr_0, corr_1, carr_0, carr_1 = FSK.bfsk_correlation(signal_with_noise)
+demodulated_data, corr_0, corr_1, carr_0, carr_1, received_signal_filtered = FSK.bfsk_correlation(signal_with_noise)
+received_data = FSK.obtain_modulation_signal(demodulated_data)
 
 plot_D(received_signal=signal_with_noise, corr_0=corr_0, corr_1=corr_1, carr_0=carr_0, carr_1=carr_1, time_vector=time_vector)
+
+plot_E(original_data=modulation_signal, received_data=received_data, time_vector=time_vector)
