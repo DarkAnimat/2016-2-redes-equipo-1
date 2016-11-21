@@ -3,11 +3,15 @@ import matplotlib.pyplot as plt
 import wave,struct
 
 def generate_wav(filename,streamData):
+    """ Generate a '.wav' file according to a data-stream.
+
+        :param filename: Name of .wav.
+        :param datastream: Stream of data.
+    """
 	
 	SAMPLE_LEN = len(streamData)
 	noise_output = wave.open(filename, 'w')
 	#Aca la tupla de entrada es number of channels, sample width, frame rate, nframes, comptype, compname
-	#al editar frame rate se supone se deberia editar el tiempo transcurrido para editar el audio, se supone
 	noise_output.setparams((2, 2, 44100,SAMPLE_LEN, 'NONE', 'not compressed'))
 
 	values = []
@@ -31,4 +35,12 @@ def generate_wav(filename,streamData):
 	print(nchannels,",", sampwidth,",", framerate,",", nframes,",", comptype,"," ,compname)
 	ffile.close()
 
-generate_wav('noise1.wav',x)
+def make_wav(filename,datastream,frec):
+    """ Generate a '.wav' file according to a data-stream.
+
+        :param filename: Name of .wav.
+        :param datastream: Stream of data.
+        :param frec: frecuency.
+    """
+	scaled = np.int16(datastream/np.max(np.abs(datastream)) * 32767)
+	write(filename,frecuency,scaled)
