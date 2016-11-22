@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from lib import low_pass_filter as low_filter
 
 # Human hearing goes from 20 Hz to 20,000 Hz (3.183 to 31830)
-CARRIER_AMPLITUDE = 100                          # Carrier's amplitude
+CARRIER_AMPLITUDE = 10000                          # Carrier's amplitude
 CARRIER_FREQUENCY_0 = int( 7000 / (2 * PI))      # Carrier's frequency for the 0-bit
 CARRIER_FREQUENCY_1 = int( 12500 / (2 * PI))     # Carrier's frequency for the 1-bit
 PULSE_FREQUENCY = 2              # Frequency of signal pulse (bit on signal)
@@ -166,7 +166,11 @@ def bfsk_correlation(received_signal):
         :param received_signal: Signal to be demodulated with correlations.
         :return: Stream of data
     """
-    time_vector = obtain_time_vector(received_signal)
+
+    length = len(received_signal)
+    seconds = length/SAMPLING_FREQUENCY
+    time_vector = np.linspace(0, seconds, length)
+
 
     pulse_duration = 1/PULSE_FREQUENCY
     wave_duration = 1/CARRIER_FREQUENCY_0
@@ -177,8 +181,6 @@ def bfsk_correlation(received_signal):
 
     time_vector_0 = time_vector[0: points_per_wave_0]
     time_vector_1 = time_vector[0: points_per_wave_1]
-
-
 
     carrier_signal_0 = obtain_carrier_signal(CARRIER_FREQUENCY_0, time_vector_0)
     carrier_signal_1 = obtain_carrier_signal(CARRIER_FREQUENCY_1, time_vector_1)
@@ -207,16 +209,23 @@ def bfsk_correlation(received_signal):
     distance = int(SAMPLING_FREQUENCY/PULSE_FREQUENCY)
     for i in range(0, data_quantity, distance):
 
+        if ( data_quantity - i ) < (distance/2):
+            break
+
         sum0 = 0
         sum1 = 0
         for j in range(0, distance):
+
             sum0 += abs(corr_0[i+j])
             sum1 += abs(corr_1[i+j])
+            if (i+j + 1 ) == len(corr_0):
+                break
 
         if sum0 >= sum1:
             Vx.append("0")
         else:
             Vx.append("1")
+
 
     return ''.join(Vx), corr_0, corr_1, carrier_signal_0, carrier_signal_1, received_signal
 
@@ -242,11 +251,15 @@ def bfsk_correlation2(received_signal):
         for j in range(0, SAMPLING_FREQUENCY):
             sum0 += abs(corr_0[i+j])
             sum1 += abs(corr_1[i+j])
+            if (i+j+1) == len(corr_0):
+                break
 
         if sum0 >= sum1:
             Vx.append("0")
         else:
             Vx.append("1")
+
+
 
     return ''.join(Vx), corr_0, corr_1, carrier_signal_0, carrier_signal_1, received_signal
 
