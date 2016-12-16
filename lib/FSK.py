@@ -5,9 +5,11 @@ from numpy import cos as COS
 import math
 import matplotlib.pyplot as plt
 from lib import low_pass_filter as low_filter
+import time
+from scipy.signal import medfilt, hilbert
 
 # Human hearing goes from 20 Hz to 20,000 Hz (3.183 to 31830)
-CARRIER_AMPLITUDE = 10000                          # Carrier's amplitude
+CARRIER_AMPLITUDE = 100                          # Carrier's amplitude
 CARRIER_FREQUENCY_0 = int( 7000 / (2 * PI))      # Carrier's frequency for the 0-bit
 CARRIER_FREQUENCY_1 = int( 12500 / (2 * PI))     # Carrier's frequency for the 1-bit
 PULSE_FREQUENCY = 2              # Frequency of signal pulse (bit on signal)
@@ -40,12 +42,13 @@ def check_sampling_points_graph():
     plt.xlim(0,wave_duration)
     plt.show()
 
+
 def obtain_signal_duration(signal):
     signal_points = len(signal)
     number_of_pulses = signal_points / (SAMPLING_FREQUENCY/PULSE_FREQUENCY)
     pulse_duration = 1 / PULSE_FREQUENCY
     signal_duration = pulse_duration * number_of_pulses
-    return int(signal_duration)
+    return signal_duration
 
 
 def bfsk_modulation(datastream):
@@ -129,6 +132,7 @@ def obtain_time_vector(modulation_signal):
     duration = obtain_signal_duration(modulation_signal)
     signal_points = len(modulation_signal)
     Vt = np.linspace(0, duration, signal_points)
+
     return Vt
 
 
@@ -170,97 +174,44 @@ def bfsk_correlation(received_signal):
     length = len(received_signal)
     seconds = length/SAMPLING_FREQUENCY
     time_vector = np.linspace(0, seconds, length)
-
-
-    pulse_duration = 1/PULSE_FREQUENCY
-    wave_duration = 1/CARRIER_FREQUENCY_0
     points_per_pulse = math.ceil(SAMPLING_FREQUENCY * (1 / PULSE_FREQUENCY))
-    points_per_wave_0 = math.ceil(points_per_pulse/(CARRIER_FREQUENCY_0/PULSE_FREQUENCY))
-    points_per_wave_1 = math.ceil(points_per_pulse/(CARRIER_FREQUENCY_1/PULSE_FREQUENCY))
-
-
-    time_vector_0 = time_vector[0: points_per_wave_0]
-    time_vector_1 = time_vector[0: points_per_wave_1]
-
+    time_vector_0 = time_vector[0: points_per_pulse]
+    time_vector_1 = time_vector[0: points_per_pulse]
     carrier_signal_0 = obtain_carrier_signal(CARRIER_FREQUENCY_0, time_vector_0)
     carrier_signal_1 = obtain_carrier_signal(CARRIER_FREQUENCY_1, time_vector_1)
 
+    # CORRELACION
+    print("Starting with correlation")
+    start  = time.time()
+    corr_0 = signal.fftconvolve(received_signal, carrier_signal_0[::-1], mode='same')
+    corr_1 = signal.fftconvolve(received_signal, carrier_signal_1[::-1], mode='same')
+    done   = time.time()
+    print("Correlation done... It takes {} seconds".format(done-start))
 
-    corr_0 = signal.correlate(received_signal, carrier_signal_0, mode='same')
-    corr_1 = signal.correlate(received_signal, carrier_signal_1, mode='same')
+    # FILTRO
+    print("Starting with filter")
+    start  = time.time()
+    corr_0 = medfilt(np.abs(corr_0), 21)
+    corr_1 = medfilt(np.abs(corr_1), 21)
+    done   = time.time()
+    print("Filter function done... It takes {} seconds".format(done-start))
 
-    ####################33
-    # FILTRAR AQUI
-    ###################
-
-    #received_signal = low_filter.filter(received_signal,SAMPLING_FREQUENCY,max(CARRIER_FREQUENCY_0,CARRIER_FREQUENCY_1))
-    corr_0 = low_filter.filter(corr_0,SAMPLING_FREQUENCY,CARRIER_FREQUENCY_0)
-    corr_1 = low_filter.filter(corr_1,SAMPLING_FREQUENCY,CARRIER_FREQUENCY_1)
-
-    #analytic_signal_0 = signal.hilbert(corr_0)
-    #corr_0 = np.abs(analytic_signal_0)
-
-    #analytic_signal_1 = signal.hilbert(corr_1)
-    #corr_1 = np.abs(analytic_signal_1)
-
+    # DECISION
     data_quantity = len(received_signal)
+    print("Cantidad de pulsos: {}".format(seconds*PULSE_FREQUENCY))
     Vx = []
-    # COMPARISON
     distance = int(SAMPLING_FREQUENCY/PULSE_FREQUENCY)
     for i in range(0, data_quantity, distance):
-
+        #print(i/distance)
         if ( data_quantity - i ) < (distance/2):
             break
-
-        sum0 = 0
-        sum1 = 0
-        for j in range(0, distance):
-
-            sum0 += abs(corr_0[i+j])
-            sum1 += abs(corr_1[i+j])
-            if (i+j + 1 ) == len(corr_0):
-                break
-
-        if sum0 >= sum1:
+        t0 = corr_0[int(i+distance/2)]
+        t1 = corr_1[int(i+distance/2)]
+        if (t0 >= t1):
             Vx.append("0")
         else:
             Vx.append("1")
-
-
-    return ''.join(Vx), corr_0, corr_1, carrier_signal_0, carrier_signal_1, received_signal
-
-def bfsk_correlation2(received_signal):
-    """ Makes a cross-correlation between the received_signal and it's carrier and obtains the original data.
-
-        :param received_signal: Signal to be demodulated with correlations.
-        :return: Stream of data
-    """
-    time_vector = obtain_time_vector(received_signal)
-    carrier_signal_0 = obtain_carrier_signal(CARRIER_FREQUENCY_0, time_vector[0:SAMPLING_FREQUENCY])
-    carrier_signal_1 = obtain_carrier_signal(CARRIER_FREQUENCY_1, time_vector[0:SAMPLING_FREQUENCY])
-    corr_0 = signal.correlate(received_signal, carrier_signal_0, mode='same') / SAMPLING_FREQUENCY
-    corr_1 = signal.correlate(received_signal, carrier_signal_1, mode='same') / SAMPLING_FREQUENCY
-
-    data_quantity = len(received_signal)
-    Vx = []
-
-    for i in range(0, data_quantity, SAMPLING_FREQUENCY):
-
-        sum0 = 0
-        sum1 = 0
-        for j in range(0, SAMPLING_FREQUENCY):
-            sum0 += abs(corr_0[i+j])
-            sum1 += abs(corr_1[i+j])
-            if (i+j+1) == len(corr_0):
-                break
-
-        if sum0 >= sum1:
-            Vx.append("0")
-        else:
-            Vx.append("1")
-
-
-
+    print(len(Vx))
     return ''.join(Vx), corr_0, corr_1, carrier_signal_0, carrier_signal_1, received_signal
 
 
