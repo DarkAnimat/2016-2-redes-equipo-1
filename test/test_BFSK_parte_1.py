@@ -1,6 +1,5 @@
 from lib import FSK
 import numpy as np
-from scipy import signal
 import matplotlib.pyplot as plt
 
 def plot_A(modulation_signal, time_vector, carrier_signal_0, carrier_signal_1, modulated_signal):
@@ -79,37 +78,40 @@ def plot_D(received_signal, corr_0, corr_1, carr_0, carr_1, time_vector):
     carr_0 = np.concatenate((carr_0, zeros_0))
     carr_1 = np.concatenate((carr_1, zeros_1))
 
-
-
     # FIRST PLOT: received signal
     plt.subplot(5,1,1)
     plt.title("Modulated signal")
     plt.ylabel("Amplitude")
     plt.plot(time_vector, received_signal)
+    plt.xlim(0, time_vector[-1])
 
     # SECOND PLOT: correlation for 0-bit
     plt.subplot(5,1,2)
     plt.title("Correlation for 0-bit")
     plt.ylabel("Amplitude")
     plt.plot(time_vector, carr_0)
+    plt.xlim(0, time_vector[-1])
 
     # THIRD PLOT: correlation for 1-bit
     plt.subplot(5,1,3)
     plt.title("Correlation for 1-bit")
     plt.ylabel("Amplitude")
     plt.plot(time_vector, corr_0)
+    plt.xlim(0, time_vector[-1])
 
     # SECOND PLOT: correlation for 0-bit
     plt.subplot(5,1,4)
     plt.title("Correlation for 0-bit")
     plt.ylabel("Amplitude")
     plt.plot(time_vector, carr_1)
+    plt.xlim(0, time_vector[-1])
 
     # THIRD PLOT: correlation for 1-bit
     plt.subplot(5,1,5)
     plt.title("Correlation for 1-bit")
     plt.ylabel("Amplitude")
     plt.plot(time_vector, corr_1)
+    plt.xlim(0, time_vector[-1])
 
     plt.show()
 
@@ -128,55 +130,65 @@ def plot_E(original_data, received_data, time_vector):
 
     plt.show()
 
+### SETTING DATA FOR TESTING
+FSK.set_carrier_freq_0(4000)
+FSK.set_carrier_freq_1(3000)
+FSK.set_pulse_frequency(10)
+FSK.set_sampling_frequency(44100)
+FSK.set_carrier_amplitude(10000)
 
 ### REAL DATA STREAM EXAMPLE
 datastream_example = "1010101010100000100010000000000000000100000000000000000000000000000010100000000000000000000000000000000000000000000000000000000000000000000000000000100000100000010100001010000100100001101010100010001001101010101000101100001011000010100110101000001010010010101111010111110"
-datastream_example = datastream_example[0:2]
-datastream_example = "01"*10
 
-print(len(datastream_example))
-### SETTING DATA FOR TESTING
-#FSK.set_carrier_freq_0(8)
-#FSK.set_carrier_freq_1(20)
-FSK.set_pulse_frequency(10)
-#FSK.set_sampling_frequency(1000)
-#FSK.set_carrier_amplitude(1)
-FSK.check_sampling_points_graph()
-
-
-### MODULATION
+### PREPARE FOR MODULATION
 modulation_signal = FSK.obtain_modulation_signal(datastream_example)                # Modulation signal
 duration = FSK.obtain_signal_duration(modulation_signal)                            # Signal duration in seconds
 time_vector = FSK.obtain_time_vector(modulation_signal)                             # Time vector
 carrier_signal_0 = FSK.obtain_carrier_signal(FSK.CARRIER_FREQUENCY_0, time_vector)  # Carrier signal for 0-
 carrier_signal_1 = FSK.obtain_carrier_signal(FSK.CARRIER_FREQUENCY_1, time_vector)  # Carrier signal for 1-bit
+
+### MODULATION
 modulated_signal = FSK.obtain_modulated_signal(modulation_signal, carrier_signal_0, carrier_signal_1) # Modulated signal (OOK)
 
-#plot_A(modulation_signal=modulation_signal, time_vector=time_vector,  carrier_signal_0=carrier_signal_0, carrier_signal_1=carrier_signal_1, modulated_signal=modulated_signal)
-
-
 ### ADDING NOISE TO THE MODULATED SIGNAL
-mu, sigma = 0, 0.1                                                                  # Mean and standard deviation
-noise = np.random.normal(mu, sigma, len(modulated_signal))                          # Noise
-signal_with_noise = modulated_signal + noise                                        # Signal with noise
-
-#plot_B(modulated_signal=modulated_signal, signal_with_noise=signal_with_noise, noise=noise, time_vector=time_vector)
-
-### SPECTOGRAM OF BOTH SIGNAL (WITH AND WITHOUT NOISE)
-#plot_C(modulated_signal=modulated_signal, signal_with_noise=signal_with_noise)
+mu, sigma = 0, 1                                                                # Mean and standard deviation
+noise = np.random.normal(mu, sigma, len(modulated_signal))                      # Noise
+signal_with_noise = modulated_signal + noise                                    # Signal with noise
 
 ### DEMODULATION
 demodulated_data, corr_0, corr_1, carr_0, carr_1, received_signal_filtered = FSK.bfsk_correlation(signal_with_noise)
 received_data = FSK.obtain_modulation_signal(demodulated_data)
 
-#plot_D(received_signal=signal_with_noise, corr_0=corr_0, corr_1=corr_1, carr_0=carr_0, carr_1=carr_1, time_vector=time_vector)
 
-#plot_E(original_data=modulation_signal, received_data=received_data, time_vector=time_vector)
+### PLOTS
+
+# Carrier signal plot
+FSK.check_sampling_points_graph()
 
 
+# Plot modulation signal and modulated signal
+plot_A(modulation_signal=modulation_signal, time_vector=time_vector,  carrier_signal_0=carrier_signal_0, carrier_signal_1=carrier_signal_1, modulated_signal=modulated_signal)
+
+# Plot signal with noise
+plot_B(modulated_signal=modulated_signal, signal_with_noise=signal_with_noise, noise=noise, time_vector=time_vector)
+
+# Plot spectogram of both signals (with and without noise)
+plot_C(modulated_signal=modulated_signal, signal_with_noise=signal_with_noise)
+
+# Plot received signal, and correlations
+plot_D(received_signal=signal_with_noise, corr_0=corr_0, corr_1=corr_1, carr_0=carr_0, carr_1=carr_1, time_vector=time_vector)
+
+# Plot original data and received data
+plot_E(original_data=modulation_signal, received_data=received_data, time_vector=time_vector)
+
+
+
+"""
 import numpy as np
 from scipy.io.wavfile import write
 
 data = modulated_signal
 scaled = np.int16(data/np.max(np.abs(data)) * 32767)
-write('test_generated_01_signal.wav', FSK.SAMPLING_FREQUENCY, scaled)
+
+write('testing1000A.wav', FSK.SAMPLING_FREQUENCY, scaled)
+"""
