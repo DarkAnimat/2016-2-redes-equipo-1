@@ -1,4 +1,4 @@
-from queue import Queue, Full
+import queue as Queue
 from lib import generate_wav as gw
 from lib import codificacion as cod
 from lib import FSK as fsk
@@ -9,30 +9,58 @@ import audioop
 import pyaudio
 import curses
 import math
+import sounddevice as sd
+import matplotlib.pyplot as plt
+import os
+import multiprocessing
 
-
-# IMPORTANT DATA:
+# IMPORTANT INFORMATION:
 fsk.set_carrier_freq_0(3000)
 fsk.set_carrier_freq_1(4000)
+fsk.set_pulse_frequency(10)
 
 CHUNK_SIZE = 800
 RATE = 44100
-MIN_VOLUME = 1600      # DEFAULT VALUE
-
 
 # if the recording thread can't consume fast enough, the listener will start discarding
 BUF_MAX_SIZE = CHUNK_SIZE * 10
 
-def main():
-    global MIN_VOLUME
+PATH_MAIN = os.path.normpath(os.getcwd())
+PATH_SOUND_RESOURCES = os.path.join(PATH_MAIN, "..", "resources", "audio_files")
+GOOD_CONFIRMATION = "1" * 50
+BAD_CONFIRMATION = "0" * 50
 
-    #MIN_VOLUME = min_volume_calibration()
+
+def format_audio_path(path):
+    if not(os.path.isabs(path)):
+        new_path = os.path.join(PATH_SOUND_RESOURCES, path)
+        return new_path
+    return path
+
+def main():
+
+
+    data_good_confirmation = fsk.bfsk_modulation(GOOD_CONFIRMATION)
+    data_bad_confirmation = fsk.bfsk_modulation(BAD_CONFIRMATION)
+    gw.make_wav("good_confirmation.wav",data_good_confirmation,RATE)
+    gw.make_wav("bad_confirmation.wav",data_bad_confirmation, RATE)
+
+
+    stream = pyaudio.PyAudio().open(
+        format=pyaudio.paInt16,
+        channels=1,
+        rate=44100,
+        input=True,
+        frames_per_buffer=CHUNK_SIZE,
+    )
+
 
     stopped = threading.Event()
-    q = Queue(maxsize=int(round(BUF_MAX_SIZE / CHUNK_SIZE)))
-    listen_t = threading.Thread(target=listen, args=(stopped, q))
+    waiting = threading.Lock()
+    q = Queue.Queue(maxsize=int(round(BUF_MAX_SIZE / CHUNK_SIZE)))
+    listen_t = threading.Thread(target=listen, args=(stopped, waiting, stream, q))
     listen_t.start()
-    record_t = threading.Thread(target=record, args=(stopped, q))
+    record_t = threading.Thread(target=record, args=(stopped, waiting, stream, q))
     record_t.start()
 
     try:
@@ -46,9 +74,7 @@ def main():
     record_t.join()
 
 
-import matplotlib.pyplot as plt
-
-def record(stopped, q):
+def record(stopped, waiting, stream, q):
 
     starting_counter = 0
     starting_limit = 50
@@ -60,6 +86,10 @@ def record(stopped, q):
     min_amplitude = 400000
     aux_frames = []
     frames = []
+    framelength = int( (cod.STREAM_LENGTH / fsk.PULSE_FREQUENCY ) * fsk.SAMPLING_FREQUENCY )
+    confirmationframelength = int( (len(GOOD_CONFIRMATION) / fsk.PULSE_FREQUENCY ) * fsk.SAMPLING_FREQUENCY )
+    decoded_frames = []
+
 
     while True:
 
@@ -84,7 +114,7 @@ def record(stopped, q):
                     ending_counter += 1
                 else:
                     record_has_ended = True
-                    aux_frames = []
+                    aux_frames[:] = []
                     starting_counter = 0
                     ending_counter = 0
             else:
@@ -92,7 +122,7 @@ def record(stopped, q):
                     starting_counter += 1
                     forgiving_counter += 1
                 else:
-                    aux_frames = []
+                    aux_frames[:] = []
                     starting_counter = 0
                     forgiving_counter = 0
 
@@ -100,9 +130,43 @@ def record(stopped, q):
 
         if (record_has_ended):
             print("RECORD HAS ENDED")
+            waiting.acquire()
+            stream.stop_stream()
+
             wavdata = np.hstack(frames)
-            gw.make_wav("nenaza", wavdata, RATE)
-            stopped.set()
+            if (len(wavdata) >= framelength):
+                wavdata = wavdata[0:framelength]
+                decoded_data = fsk.bfsk_correlation(wavdata)[0]
+                is_correct, decoded_data = cod.check_and_correct_data_stream(decoded_data)
+                if(is_correct):
+                    print("data decoded correctly")
+                    decoded_frames.append(decoded_data)
+                    confirmation_OK()
+                else:
+                    print("data decoded incorrectly")
+                    confirmation_NOT_OK()
+            else:
+                # Maybe is the ending frame:
+                wavdata = wavdata[0:confirmationframelength]
+                decoded_data = fsk.bfsk_correlation(wavdata)[0]
+                if (decoded_data == GOOD_CONFIRMATION):
+                    print("Transmision has ended")
+                    stopped.set()
+                    break
+                else:
+                    print("data decoded incorrectly")
+                    confirmation_NOT_OK()
+
+            starting_counter = 0
+            ending_counter = 0
+            forgiving_counter = 0
+            aux_frames[:] = []
+            frames[:] = []
+            record_has_ended = False
+            stream.start_stream()
+            waiting.release()
+
+
         elif (starting_counter == starting_limit):
             print("RECORD HAS STARTED")
             frames = aux_frames[:]
@@ -114,142 +178,38 @@ def record(stopped, q):
         elif (starting_counter > 0):
             aux_frames.append(numpydata)
 
+    decoded_image = cod.decode_data_streams_to_image(decoded_frames)
+    cod.save_image(decoded_image, "RESULTADO.jpg")
+    print("Image has ben generated")
+
+def listen(stopped, waiting, stream, q):
 
 
-        """
-        if maxfrq == 0:
-            plt.plot(frq, amplitude)
-            plt.show()
-            exit(0)
-
-        if ((fsk.CARRIER_FREQUENCY_0 - deviation <= maxfrq and maxfrq <= fsk.CARRIER_FREQUENCY_0 + deviation ) or
-            (fsk.CARRIER_FREQUENCY_1 - deviation <= maxfrq and maxfrq <= fsk.CARRIER_FREQUENCY_1 + deviation ) ):
-            print("YES!")
-        else:
-            print(maxfrq)
-        """
-
-
-
-        """
-        data_vol = audioop.rms(data,2)
-
-
-        if (starting_counter <= starting_point ):
-            aux_frames.append(np.fromstring(data, dtype=np.int16))
-
-        if data_vol >= MIN_VOLUME:
-
-            print(starting_counter)
-
-            if (starting_counter == starting_point):
-                print("RECORDING NOW...")
-                frames = aux_frames[:]
-
-            elif (starting_counter > starting_point):
-                frames.append(np.fromstring(data, dtype=np.int16))
-                if (ending_counter < ending_point): ending_counter = 0
-
-            starting_counter +=1
-
-        else:
-
-            if (starting_counter > starting_point):
-
-                print("End{}".format(ending_counter))
-                frames.append(np.fromstring(data, dtype=np.int16))
-                if (ending_counter == ending_point):
-                    print("RECORDING STOPPED...")
-                    stopped.set()
-
-                    numpydata = np.hstack(frames)
-
-                    limit = cod.STREAM_LENGTH
-                    limit = int((limit / fsk.PULSE_FREQUENCY) * fsk.SAMPLING_FREQUENCY)
-                    gw.make_wav("nene",numpydata[0:limit],RATE)
-                    exit(0)
-
-                ending_counter += 1
-
-            elif (starting_counter > 0 and starting_counter < starting_point and aux_counter != 2):
-
-                print(starting_counter)
-
-                aux_frames.append(np.fromstring(data, dtype=np.int16))
-                starting_counter += 1
-                aux_counter += 1
-
-            else:
-
-                print("---")
-
-                aux_frames = []
-                starting_counter = 0
-                aux_counter = 0
-        """
-
-def listen(stopped, q):
-
-
-    stream = pyaudio.PyAudio().open(
-        format=pyaudio.paInt16,
-        channels=1,
-        rate=44100,
-        input=True,
-        frames_per_buffer=CHUNK_SIZE,
-    )
 
     while True:
-
         if stopped.wait(timeout=0):
             break
+
+        waiting.acquire()
+
         try:
-            q.put(stream.read(CHUNK_SIZE))
-        except Full:
-            pass  # discard
+            q.put(stream.read(CHUNK_SIZE), block=False)
+        except Queue.Full:
+            pass
+
+        waiting.release()
+
+def format_audio_path(path):
+    if not(os.path.isabs(path)):
+        new_path = os.path.join(PATH_SOUND_RESOURCES, path)
+        return new_path
+    return path
+
+def confirmation_OK():
+    mw.play_wav_file("good_confirmation.wav")
+
+def confirmation_NOT_OK():
+    mw.play_wav_file("bad_confirmation.wav")
 
 
-def min_volume_calibration():
-    # Calibrar el microfono
-    stream = pyaudio.PyAudio().open(
-        format=pyaudio.paInt16,
-        channels=1,
-        rate=44100,
-        input=True,
-        frames_per_buffer=CHUNK_SIZE,
-    )
-
-    counter = 0
-    counter_limit = 100
-    volume = np.array([])
-    print("Calibrating... Please wait...")
-    while counter < counter_limit:
-        temp = int(counter_limit/10) - 1
-        temp2 = counter % temp
-        if (temp2 == 0):
-            print("...")
-        data = stream.read(CHUNK_SIZE)
-        rms = audioop.rms(data,2)
-
-        volume = np.append(volume,rms)
-        counter += 1
-
-    volume = np.sort(volume)
-    max = np.max(volume)
-
-    print("Calibrating done... Background noise's power is about {})".format(max))
-    return max
-
-def  calibrate_manually():
-
-    screen = curses.initscr()
-    while True:
-        char = screen.getch()
-        print("char is ", curses.KEY_LEFT)
-        if (char == 122 or char == 90): print("left")
-        elif (char == 120 or char == 88): print("right")
-
-
-
-if __name__ == '__main__':
-    main()
+main()

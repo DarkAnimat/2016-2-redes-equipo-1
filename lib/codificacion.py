@@ -196,7 +196,7 @@ def obtain_image_values(streams):
     return img_data
 
 
-def decode_data_stream_to_image(streams):
+def decode_data_streams_to_image(streams):
     """ Decodes the data inside of a group of data-streams and creates an Image object from what is obtained.
 
         :param streams: list of streams of data codified.
