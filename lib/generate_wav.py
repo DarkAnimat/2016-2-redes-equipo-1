@@ -1,12 +1,22 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import wave, struct
 from scipy.io.wavfile import write
 
 
-def generate_wav(filename, streamData):
+def make_wav(filename, datastream, frec):
     """ Generate a '.wav' file according to a data-stream.
 
+        :param filename: Name of .wav.
+        :param datastream: Stream of data.
+        :param frec: frecuency.
+    """
+    scaled = np.int16(datastream / np.max(np.abs(datastream)) * 32767)
+    write(filename, frec, scaled)
+
+
+def generate_wav(filename, streamData):
+    """ Generate a '.wav' file according to a data-stream (USE MAKE_WAV function instead of this)
+    
         :param filename: Name of .wav.
         :param datastream: Stream of data.
     """
@@ -36,13 +46,3 @@ def generate_wav(filename, streamData):
     print(nchannels, ",", sampwidth, ",", framerate, ",", nframes, ",", comptype, ",", compname)
     ffile.close()
 
-
-def make_wav(filename, datastream, frec):
-    """ Generate a '.wav' file according to a data-stream.
-
-        :param filename: Name of .wav.
-        :param datastream: Stream of data.
-        :param frec: frecuency.
-    """
-    scaled = np.int16(datastream / np.max(np.abs(datastream)) * 32767)
-    write(filename, frec, scaled)
