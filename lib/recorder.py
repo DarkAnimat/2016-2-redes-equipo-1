@@ -15,9 +15,9 @@ import os
 import multiprocessing
 
 # IMPORTANT INFORMATION:
-fsk.set_carrier_freq_0(3000)
-fsk.set_carrier_freq_1(4000)
-fsk.set_pulse_frequency(10)
+fsk.set_carrier_freq_0(8000)
+fsk.set_carrier_freq_1(9000)
+fsk.set_pulse_frequency(50)
 
 CHUNK_SIZE = 800
 RATE = 44100
@@ -135,16 +135,22 @@ def record(stopped, waiting, stream, q):
 
             wavdata = np.hstack(frames)
             if (len(wavdata) >= framelength):
-                wavdata = wavdata[0:framelength]
+                wavdata = wavdata[0:framelength]        # Punto de falla de sincronizacion
                 decoded_data = fsk.bfsk_correlation(wavdata)[0]
+                print(len(decoded_data), cod.STREAM_LENGTH)
+                print(decoded_data)
+                decoded_frames.append(decoded_data)
+
+                ## Data correction
+                """
                 is_correct, decoded_data = cod.check_and_correct_data_stream(decoded_data)
                 if(is_correct):
                     print("data decoded correctly")
-                    decoded_frames.append(decoded_data)
                     confirmation_OK()
                 else:
                     print("data decoded incorrectly")
                     confirmation_NOT_OK()
+                """
             else:
                 # Maybe is the ending frame:
                 wavdata = wavdata[0:confirmationframelength]
@@ -154,8 +160,9 @@ def record(stopped, waiting, stream, q):
                     stopped.set()
                     break
                 else:
-                    print("data decoded incorrectly")
-                    confirmation_NOT_OK()
+                    print("data received is not correct")
+
+                    #confirmation_NOT_OK() <--- not needed
 
             starting_counter = 0
             ending_counter = 0
@@ -178,6 +185,7 @@ def record(stopped, waiting, stream, q):
         elif (starting_counter > 0):
             aux_frames.append(numpydata)
 
+    print(decoded_frames)
     decoded_image = cod.decode_data_streams_to_image(decoded_frames)
     cod.save_image(decoded_image, "RESULTADO.jpg")
     print("Image has ben generated")

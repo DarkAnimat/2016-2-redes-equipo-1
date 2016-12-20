@@ -10,6 +10,56 @@ STREAM_LENGTH = STREAM_INFORMATION_BITS_QTY + STREAM_PARITY_BITS_QTY  # Quantity
 STREAM_EXTENDED_BIT = True          # Extra bit for extended hamming code?
 if STREAM_EXTENDED_BIT: STREAM_LENGTH += 1
 
+def set_stream_information_bits_qty(value):
+    """ Set the quantity of bits used for storing information in Hamming algorithm
+
+    :param value: Value to set
+    :return: Nothing
+    """
+    global STREAM_INFORMATION_BITS_QTY
+    global STREAM_LENGTH
+    STREAM_INFORMATION_BITS_QTY = value
+    STREAM_LENGTH = STREAM_INFORMATION_BITS_QTY + STREAM_PARITY_BITS_QTY
+    if STREAM_EXTENDED_BIT: STREAM_LENGTH += 1
+
+
+def set_stream_parity_bits_qty(value):
+    """ Set the quantity of parity bits used for storing information in Hamming algorithm. Must follow the next
+    relationship:
+
+            2^k - 1 >= k + n
+
+    where:
+    k = number of parity bits
+    n = number of information bits
+
+    If relationship is not made, then Hamming algorithm won't work.
+
+    :param value: Value to set
+    :return: Nothing
+
+    """
+    global STREAM_PARITY_BITS_QTY
+    global STREAM_LENGTH
+    STREAM_PARITY_BITS_QTY = value
+    STREAM_LENGTH = STREAM_INFORMATION_BITS_QTY + STREAM_PARITY_BITS_QTY
+    if STREAM_EXTENDED_BIT: STREAM_LENGTH += 1
+
+
+def set_stream_extended_bit(value):
+    """ Set true or false to use extended Hamming algorithm or  not
+
+    :param value: True or False
+    :return: Nothing
+
+    """
+    global STREAM_EXTENDED_BIT
+    global STREAM_LENGTH
+    STREAM_EXTENDED_BIT = value
+    STREAM_LENGTH = STREAM_INFORMATION_BITS_QTY + STREAM_PARITY_BITS_QTY
+    if STREAM_EXTENDED_BIT: STREAM_LENGTH += 1
+
+
 def open_image_file(path):
     """ Open an image file if possible and returns and Image object
 
@@ -65,9 +115,6 @@ def encode_image_to_data_streams(image):
     # Adding parity bits according to Hamming algorithm:
     for i in range(0, streams_qty):
         streams[i] = add_parity_bits_to_stream(streams[i])
-        if STREAM_EXTENDED_BIT:
-            extended_bit = generate_extended_parity_value(streams[i])
-            streams[i] = streams[i][0:-1] + extended_bit
 
     encoded_image = np.array(streams)
     return encoded_image
@@ -95,6 +142,10 @@ def add_parity_bits_to_stream(stream):
         parity_value = generate_parity_value(position, new_stream)
         new_stream = new_stream[0:position-1] + parity_value + new_stream[position:]
 
+    if STREAM_EXTENDED_BIT:
+        extended_bit = generate_extended_parity_value(new_stream)
+        new_stream = new_stream[0:-1] + extended_bit
+
     return new_stream
 
 
@@ -106,22 +157,25 @@ def generate_parity_value(position, stream):
         :return: Parity value generated.
 
     """
+
     exponent = obtain_power2_exponent(position)
+    #print("exponent", exponent, -(exponent+1))
     ret = ""
     first_found = True
-
     limit = STREAM_LENGTH
     if STREAM_EXTENDED_BIT: limit = limit - 1
-
     for i in range(0, limit):
         aux = '{:01b}'.format(i+1).zfill(STREAM_PARITY_BITS_QTY)
-        if aux[-(exponent+1)] == "1":
+        aux_index = STREAM_PARITY_BITS_QTY - exponent - 1
+        if (aux[aux_index] == "1"):
             if first_found:
                 first_found = False
             elif ret == "":
                 ret = stream[i]
+
             else:
                 ret = xor_function(ret, stream[i])
+
     return ret
 
 def generate_extended_parity_value(stream):
@@ -160,6 +214,7 @@ def remove_parity_values(streams):
             removed_counter += 1
 
         new_streams.append(stream)
+
     return new_streams
 
 
@@ -209,14 +264,14 @@ def decode_data_streams_to_image(streams):
     image = Image.fromarray(np_image_data, mode="L")
     return image
 
+
+
 def check_and_correct_data_stream(stream):
     """ Check if a data stream is encoded correctly. If not, tries to correct it
-
         :param stream: Stream of data, encoded with hamming algorithm
         :return: Returns a Tuple.
                  1) True if data is encoded correctly or if code was corrected, False if not.
                  2) stream (Corrected if necessary and possible)
-
     """
 
     # Obtaining parity values
@@ -228,7 +283,9 @@ def check_and_correct_data_stream(stream):
             C += "0"
         else:
             C += "1"
+
     C = int(C[::-1], 2) - 1
+
 
     # Does not continue if extended hamming code is not available
     if not(STREAM_EXTENDED_BIT):
@@ -242,7 +299,6 @@ def check_and_correct_data_stream(stream):
             return False, stream
 
     else:
-
         extended_value = generate_extended_parity_value(stream)
         if (stream[-1] == extended_value):
             P = 0
@@ -252,6 +308,10 @@ def check_and_correct_data_stream(stream):
         # No error occurred
         if ( C == -1 and P == 0 ):
             return True, stream
+
+        # Error could not be detected
+        if ( C >= len(stream)):
+            return False, stream
 
         # A single error occurred that can be corrected
         elif ( C != -1 and P == 1):
@@ -268,10 +328,8 @@ def check_and_correct_data_stream(stream):
         elif ( C == -1 and P == 1):
             if (stream[-1] == "0"):
                 return True, stream[0:-1] + "1"
-            elif(stream[-1] == "0"):
+            elif(stream[-1] == "1"):
                 return True, stream[0:-1] + "0"
-
-
 
 
 def save_image(image, path):
