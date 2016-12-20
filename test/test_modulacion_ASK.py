@@ -5,7 +5,7 @@ import numpy as np
 
 # REAL DATA STREAM EXAMPLE
 datastream_example = "01010001000100010000000000000000100000000000000000000000000000010100000000000000000000000000000000000000000000000000000000000000000000000000000100000100000010100001010000100100001101010100010001001101010101000101100001011000010100110101000001010010010101111010111110"
-
+datastream_example = "10101010"
 
 modulation_signal = ASK.obtain_modulation_signal(datastream_example)    # Modulation signal
 duration = len(datastream_example) * (1 / ASK.PULSE_FREQUENCY)          # Signal duration in seconds
@@ -16,6 +16,7 @@ carrier_signal = ASK.obtain_carrier_signal(time_vector)                 # Carrie
 # ASK MODULATION
 ###########################
 modulated_signal = ASK.obtain_modulated_signal(modulation_signal, carrier_signal) # Modulated signal (OOK)
+
 
 # FIRST PLOT: modulation signal
 plt.subplot(3, 1, 1)
@@ -60,12 +61,14 @@ plt.xlabel('f (Hz)')
 plt.ylabel('|P1(f)|')
 plt.plot(x2,y2)
 plt.show()
+
 ################################################
 # DEMODULATION TEST
 ################################################
 noise = np.random.normal(0, 1, len(carrier_signal))
-received_signal = (modulated_signal  + noise ) * carrier_signal
-demodulated_signal = ASK.obtain_modulation_signal(ASK.demodulate_signal(received_signal))
+received_signal = (modulated_signal) + noise
+demodulated_data = ASK.ask_correlation(received_signal)
+demodulated_signal = ASK.obtain_modulation_signal(demodulated_data) # Modulated signal (OOK)
 
 plt.subplot(2,1,1)
 plt.plot(time_vector, modulation_signal)
@@ -78,7 +81,6 @@ plt.plot(time_vector, demodulated_signal)
 plt.ylim(-0.1, 1.1)
 plt.xlim(0, duration)
 plt.title("Demodulated signal")
-
 
 plt.show()
 

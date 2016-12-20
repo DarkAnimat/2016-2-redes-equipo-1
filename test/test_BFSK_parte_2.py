@@ -2,10 +2,7 @@ from lib import FSK
 from lib import codificacion as cod
 from lib import generate_wav as gwav
 from lib import modulo_wav as wav
-import numpy as np
-from scipy import signal
-import matplotlib.pyplot as plt
-import numpy as np
+import time
 import os
 
 PATH_MAIN = os.path.normpath(os.getcwd())
@@ -24,18 +21,18 @@ def format_audio_path(path):
         return new_path
     return path
 
-
-# ESTE TESTING ESTA REALIZADO PARA PROBAR SI LA SEÑAL MODULADA GENERADA A PARTIR DE UNO DE LOS FRAMES DE INFORMACIÓN DE
-# UNA IMAGEN SE GUARDA DE MANERA ADECUADA O NO.
-
-FSK.set_pulse_frequency(10)
+# Testing para guardar una imagen como conjunto de archivos .wav y reproducirlos
+FSK.set_pulse_frequency(20)
 FSK.set_carrier_freq_0(3000)
 FSK.set_carrier_freq_1(4000)
-path = format_image_path("test32x32.jpg")
-
+path = format_image_path("test5x5.jpg")
 image = cod.open_image_file(path)
-encoded_image = cod.encode_image_to_data_streams(image)            # Encoding image as data streams
-modulated_signal = FSK.bfsk_modulation(encoded_image[1])           # Modulation signal
-gwav.make_wav(format_audio_path("testingx.wav"), modulated_signal, FSK.SAMPLING_FREQUENCY)
-
-#wav.record_wav_file(format_audio_path("recorded_testing_sudden_noise.wav"), 35)
+encoded_image = cod.encode_image_to_data_streams(image)                     # Encoding image as data streams
+for i in range(0, len(encoded_image)):
+    print("Playing frame {} of {}".format(i+1, len(encoded_image)))
+    audio_path = format_audio_path("testing_signal_part{}.wav".format(i))
+    modulated_signal = FSK.bfsk_modulation(encoded_image[i][0:100])
+    gwav.make_wav(audio_path, modulated_signal, FSK.SAMPLING_FREQUENCY)
+    wav.play_wav_file(audio_path)
+    time.sleep(5)
+print("All done.")
