@@ -2,12 +2,14 @@ import numpy as np
 from numpy import cos as COS
 from numpy import pi as PI
 from scipy import signal
+from scipy.signal import medfilt
+import math
 
-CARRIER_AMPLITUDE_0 = 5                 # Amplitude for the bit 0
-CARRIER_AMPLITUDE_1 = 10                # Amplitude for the bit 1
+CARRIER_AMPLITUDE_0 = 25                 # Amplitude for the bit 0
+CARRIER_AMPLITUDE_1 = 300                # Amplitude for the bit 1
 CARRIER_FREQUENCY = 10                  # Frequency of the carrier
 PULSE_FREQUENCY = 1                     # Frequency of signal pulse (bit on signal)
-PULSE_SAMPLING_POINTS = 500             # Point of sampling for each pulse
+SAMPLING_FREQUENCY = 500             # Point of sampling for each pulse
 
 
 def ask_modulation(datastream):
@@ -68,7 +70,7 @@ def set_pulse_sampling_points(value):
         :param value: new value for modulated signal pulse's frequency.
         :return None:
     """
-    global PULSE_SAMPLING_POINTS
+    global SAMPLING_FREQUENCY
     PULSE_SAMPLING_POINTS = value
 
 
@@ -80,7 +82,7 @@ def obtain_modulation_signal(datastream):
     """
     Vx = []
     for bit in datastream:
-        x = np.ones(PULSE_SAMPLING_POINTS) * int(bit)
+        x = np.ones(SAMPLING_FREQUENCY) * int(bit)
         Vx = np.concatenate((Vx, x))
     return Vx
 
@@ -92,7 +94,7 @@ def obtain_time_vector(modulation_signal):
         :return: Time vector.
     """
     carrier_sampling_points = len(modulation_signal)
-    bits_quantity = carrier_sampling_points / PULSE_SAMPLING_POINTS
+    bits_quantity = carrier_sampling_points / SAMPLING_FREQUENCY
     duration = bits_quantity * (1 / PULSE_FREQUENCY)
     Vt = np.linspace(0, duration, carrier_sampling_points)
     return Vt
@@ -116,8 +118,8 @@ def obtain_modulated_signal(modulation_signal, carrier_signal):
     """
     carrier_sampling_points = len(modulation_signal)
     modulated_signal = []
-    signal_0 = np.ones(carrier_sampling_points) * (CARRIER_AMPLITUDE_0 * carrier_signal)
-    signal_1 = np.ones(carrier_sampling_points) * (CARRIER_AMPLITUDE_1 * carrier_signal)
+    signal_0 = np.ones(carrier_sampling_points) * (CARRIER_AMPLITUDE_0 * carrier_signal)/SAMPLING_FREQUENCY
+    signal_1 = np.ones(carrier_sampling_points) * (CARRIER_AMPLITUDE_1 * carrier_signal)/SAMPLING_FREQUENCY
     for i in range(0, carrier_sampling_points):
         if modulation_signal[i] == 0:
             modulated_signal.append(signal_0[i])
@@ -133,51 +135,29 @@ def ask_correlation(received_signal):
         :param received_signal: Signal to be demodulated with correlations.
         :return: Stream of data
     """
-    time_vector = obtain_time_vector(received_signal)
-    carrier_signal = obtain_carrier_signal(time_vector[0:PULSE_SAMPLING_POINTS])
-    data_quantity = len(received_signal)
-    corr = signal.correlate(received_signal, carrier_signal, mode='same')
-
-    Vx = []
-    for i in range(0, data_quantity, PULSE_SAMPLING_POINTS):
-        sum1 = 0
-        sum2 = 0
-        for j in range(0, int(PULSE_SAMPLING_POINTS / 2)):
-            sum1 += corr[i + j]
-        for j in range(int(PULSE_SAMPLING_POINTS / 2), PULSE_SAMPLING_POINTS):
-            sum2 += corr[i + j]
-
-        print(sum1, sum2)
-        if (sum1 <= 0 and sum2 <= 0) or (sum1 > 0 and sum2 > 0) or (sum1 > 0 and sum2 < 0):
-            Vx.append("0")
-        else:
-            Vx.append("1")
-
-    return ''.join(Vx)
-
-
-def ask_coherent_demodulation(received_signal):
-    """ Coherent demodulator for a received signal.
-
-        :param received_signal: Signal to be demodulated.
-        :return: Stream of data
-    """
-    time_vector = obtain_time_vector(received_signal)
+    length = len(received_signal)
+    seconds = length/SAMPLING_FREQUENCY
+    points_per_pulse = math.ceil(SAMPLING_FREQUENCY * (1 / PULSE_FREQUENCY))
+    time_vector = np.linspace(0, seconds, length)[0:points_per_pulse]
     carrier_signal = obtain_carrier_signal(time_vector)
+    corr = signal.fftconvolve(received_signal, carrier_signal[::-1], mode='same')/CARRIER_FREQUENCY
+    corr = medfilt(np.abs(corr), 101)
+
+    # DECISION
     data_quantity = len(received_signal)
-    bits_quantity = data_quantity / PULSE_SAMPLING_POINTS
-    temp = received_signal * carrier_signal * bits_quantity
-
     Vx = []
-
-    for i in range(0, data_quantity, PULSE_SAMPLING_POINTS):
-        sum = 0
-        for j in range(0, PULSE_SAMPLING_POINTS):
-            sum += temp[i + j]
-        diff0 = abs(CARRIER_AMPLITUDE_0 - sum)
-        diff1 = abs(CARRIER_AMPLITUDE_1 - sum)
-        if diff0 <= diff1:
+    distance = int(SAMPLING_FREQUENCY/PULSE_FREQUENCY)
+    maxpoint = max(corr)
+    minpoint = min(corr)
+    for i in range(0, data_quantity, distance):
+        if ( data_quantity - i ) < (distance/2):
+            break
+        diff0 = abs(maxpoint - corr[int(i+distance/2)])  # Posible problema de sincronizacion
+        diff1 = abs(minpoint - corr[int(i+distance/2)])
+        print(diff0, diff1)
+        if diff0 >= diff1:
             Vx.append("0")
         else:
             Vx.append("1")
     return ''.join(Vx)
+

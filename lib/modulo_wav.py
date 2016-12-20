@@ -99,9 +99,7 @@ def play_wav_file(filename):
     wf = open_wav_file(filename, "rb")
 
     # Initializing PyAudio (Warning: Some error messages could appear. Probably not important)
-    print("Initializing PyAudio...\n(If you see messages above, it's not programs's fault.)")
     audio = pyaudio.PyAudio()
-    print("End of PyAudio initialization.")
 
     stream = audio.open(
         format=audio.get_format_from_width(wf.getsampwidth()),
@@ -111,10 +109,12 @@ def play_wav_file(filename):
     )
 
     data = wf.readframes(CHUNK)
-    while data != '':
+    while (data != ''): # If not working in your computer, change it for (data != b''). Don't understand why...
         stream.write(data)
         data = wf.readframes(CHUNK)
 
+
+    stream.stop_stream()
     stream.close()
     audio.terminate()
     close_wav_file(wf)
@@ -145,10 +145,16 @@ def record_wav_file(record_name, record_seconds):
     # Start Recording
     print('\tNow recording...')
     frames = []
+    temp = []
     for i in range(0, int(RATE / CHUNK * record_seconds)):
         data = stream.read(CHUNK)
         frames.append(data)
+        temp.append(np.fromstring(data, dtype=np.int16))
     print('\tThe recording has ben completed')
+    numpydata = np.hstack(temp)
+    plt.plot(numpydata)
+    plt.show()
+
 
     # Stop Recording
     stream.stop_stream()
@@ -159,7 +165,6 @@ def record_wav_file(record_name, record_seconds):
     wf = open_wav_file(record_name, "w")
     write_wav_file(wf, audio, frames)
     close_wav_file(wf)
-
 
 def write_wav_file(wavefile, audio, frames):
     """ Writes data and audio over a wavefile """
@@ -183,15 +188,12 @@ def analyze_wav_file(filename):
     print("Now plotting. This could take some time, please wait...")
     # Plotting the signal on time domain
     fig1 = plot_signal_time_domain(data, samp_points, samp_freq, holdplot=True)
-    save_plot_figure(figure=fig1, filename=filename, title="(Time Domain Plot)")
 
     # Plotting the signal on frequency domain
     fig2 = plot_signal_frequency_domain(data, samp_freq, holdplot=True)
-    save_plot_figure(figure=fig2, filename=filename, title="(Freq Domain Plot)")
 
     # Plotting the signal's spectogram
     fig3 = plot_signal_spectogram(data, samp_points, samp_freq, holdplot=True)
-    save_plot_figure(figure=fig3, filename=filename, title="(Spectogram)")
 
     plt.show()
 
@@ -208,7 +210,7 @@ def plot_signal_time_domain(data, samp_points, samp_freq, holdplot):
     """
 
     duration = (samp_points / samp_freq) * 1000   # Wave duration in miliseconds
-    figure = plt.figure(figsize=(14, 6), dpi=100)
+    figure = plt.figure(dpi=100)
     time_array = np.arange(0, samp_points, 1)
     time_array = (time_array / samp_freq) * 1000
     plt.plot(time_array, data, color='b')
@@ -252,7 +254,7 @@ def plot_signal_frequency_domain(data, samp_freq, holdplot):
     frq = frq[0:maxRange]  # Se evaluan cada frecuencia, cada frec * n/N
     transf = transf[0:maxRange]  # Se obtienen solo los valores positivos de la frecuencia
     transf = abs(transf)  # Se quitan los valores negativos de amplitud
-    figure = plt.figure(figsize=(14, 6), dpi=100)
+    figure = plt.figure(dpi=100)
     plt.plot(frq, transf, color='b')  # Se configuran los ejes y el color de la grafica
     plt.xlabel('Frecuencia')
     plt.ylabel('Amplitud')
@@ -274,7 +276,7 @@ def plot_signal_spectogram(data, samp_points, samp_freq, holdplot):
     duration = (samp_points / samp_freq)
 
     # Plotting figure
-    figure = plt.figure(figsize=(14, 6), dpi=100)
+    figure = plt.figure(dpi=100)
     pxx, freq, t, cax = plt.specgram(data/(data.size/2), Fs=samp_freq)
     plt.colorbar(cax)
     plt.title("Spectogram")
@@ -285,13 +287,47 @@ def plot_signal_spectogram(data, samp_points, samp_freq, holdplot):
     return figure
 
 
-def save_plot_figure(figure, filename, title):
+def save_plot_figure(figure, path):
     """ Just saves a  plotfigure into resources/plots"""
+    figure.savefig(os.path.join(path), dpi=figure.dpi)
 
-    if ".wav" in filename:
-        filename = filename.replace(".wav","")
-    figure.savefig(os.path.join(PATH_MAIN, "resources", "plots", filename + title + ".png"), dpi=figure.dpi)
 
+def fir_filter_2(data, samp_fre, cutoff):
+
+    """Fir filter, low band"""
+    nsamples = data.size
+    t = np.arange(nsamples) / RATE
+    signal = data
+
+    # ------------------------------------------------
+    # Create a FIR filter and apply it to signal.
+    # ------------------------------------------------
+    # The Nyquist rate of the signal.
+    nyq_rate = RATE / 2.
+
+    # The cutoff frequency of the filter:
+    cutoff_hz = cutoff
+
+    # Length of the filter (number of coefficients, i.e. the filter order + 1)
+    numtaps = 29
+
+    # Use firwin to create a lowpass FIR filter
+    fir_coeff = firwin(numtaps, cutoff_hz / nyq_rate)
+
+    # Use lfilter to filter the signal with the FIR filter
+    filtered_signal = lfilter(fir_coeff, 1.0, signal)
+
+    # ------------------------------------------------
+    # Plot the original and filtered signals.
+    # ------------------------------------------------
+
+    # The first N-1 samples are "corrupted" by the initial conditions
+    warmup = numtaps - 1
+
+    # The phase delay of the filtered signal
+    delay = (warmup / 2) / RATE
+
+    return filtered_signal
 
 def fir_filter(data, samp_fre):
     """Fir filter, low band"""

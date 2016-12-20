@@ -4,16 +4,15 @@ from numpy import pi as PI
 from numpy import cos as COS
 import math
 import matplotlib.pyplot as plt
-from lib import low_pass_filter as low_filter
 import time
-from scipy.signal import medfilt, hilbert
+from scipy.signal import medfilt
 
 # Human hearing goes from 20 Hz to 20,000 Hz (3.183 to 31830)
-CARRIER_AMPLITUDE = 100                          # Carrier's amplitude
-CARRIER_FREQUENCY_0 = int( 7000 / (2 * PI))      # Carrier's frequency for the 0-bit
-CARRIER_FREQUENCY_1 = int( 12500 / (2 * PI))     # Carrier's frequency for the 1-bit
-PULSE_FREQUENCY = 2              # Frequency of signal pulse (bit on signal)
-SAMPLING_FREQUENCY = 44100    # Frequency of signal sample
+CARRIER_AMPLITUDE = 100             # Carrier's amplitude
+CARRIER_FREQUENCY_0 = 3000          # Carrier's frequency for the 0-bit
+CARRIER_FREQUENCY_1 = 4000          # Carrier's frequency for the 1-bit
+PULSE_FREQUENCY = 2                 # Frequency of signal pulse (bit on signal)
+SAMPLING_FREQUENCY = 44100          # Frequency of signal sample
 
 def check_sampling_points_graph():
     pulse_duration = 1/PULSE_FREQUENCY
@@ -198,20 +197,18 @@ def bfsk_correlation(received_signal):
 
     # DECISION
     data_quantity = len(received_signal)
-    print("Cantidad de pulsos: {}".format(seconds*PULSE_FREQUENCY))
     Vx = []
     distance = int(SAMPLING_FREQUENCY/PULSE_FREQUENCY)
     for i in range(0, data_quantity, distance):
         #print(i/distance)
         if ( data_quantity - i ) < (distance/2):
             break
-        t0 = corr_0[int(i+distance/2)]
+        t0 = corr_0[int(i+distance/2)]      # Posible problema de sincronizacion
         t1 = corr_1[int(i+distance/2)]
         if (t0 >= t1):
             Vx.append("0")
         else:
             Vx.append("1")
-    print(len(Vx))
     return ''.join(Vx), corr_0, corr_1, carrier_signal_0, carrier_signal_1, received_signal
 
 
