@@ -87,28 +87,28 @@ def plot_D(received_signal, corr_0, corr_1, carr_0, carr_1, time_vector):
 
     # SECOND PLOT: correlation for 0-bit
     plt.subplot(5,1,2)
-    plt.title("Correlation for 0-bit")
+    plt.title("Carrier signal 0")
     plt.ylabel("Amplitude")
     plt.plot(time_vector, carr_0)
     plt.xlim(0, time_vector[-1])
 
     # THIRD PLOT: correlation for 1-bit
     plt.subplot(5,1,3)
-    plt.title("Correlation for 1-bit")
+    plt.title("Correlation for 0")
     plt.ylabel("Amplitude")
     plt.plot(time_vector, corr_0)
     plt.xlim(0, time_vector[-1])
 
     # SECOND PLOT: correlation for 0-bit
     plt.subplot(5,1,4)
-    plt.title("Correlation for 0-bit")
+    plt.title("Carrier signal 1")
     plt.ylabel("Amplitude")
     plt.plot(time_vector, carr_1)
     plt.xlim(0, time_vector[-1])
 
     # THIRD PLOT: correlation for 1-bit
     plt.subplot(5,1,5)
-    plt.title("Correlation for 1-bit")
+    plt.title("Correlation for 1")
     plt.ylabel("Amplitude")
     plt.plot(time_vector, corr_1)
     plt.xlim(0, time_vector[-1])
@@ -137,7 +137,8 @@ FSK.set_pulse_frequency(10)
 FSK.set_sampling_frequency(44100)
 FSK.set_carrier_amplitude(10000)
 datastream_example = "1010101010100000100010000000000000000100000000000000000000000000000010100000000000000000000000000000000000000000000000000000000000000000000000000000100000100000010100001010000100100001101010100010001001101010101000101100001011000010100110101000001010010010101111010111110"
-datastream_example = datastream_example[0:5]                                       # Less data for plotting
+datastream_example = datastream_example[0:5]
+# Less data for plotting
 #2) PREPARING DATA FOR MODULATION
 modulation_signal = FSK.obtain_modulation_signal(datastream_example)                # Modulation signal
 duration = FSK.obtain_signal_duration(modulation_signal)                            # Signal duration in seconds

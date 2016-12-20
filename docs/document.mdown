@@ -1,0 +1,69 @@
+Documentación
+===================
+
+
+El presente documento busca ser una guía para aquellos que hagan uso del software de transmisión de datos, implementado durante el curso de Redes de Computadores (2-2016).
+
+----------
+Descripción del proceso
+--------------------
+####  Características principales:
+
+- añadir las características principales
+
+####  Proceso:
+
+Escribir el proceso.
+
+Módulos generales y su función
+--------------------
+A continuación se mencionan y describen brevemente los módulos principales que componen el programa. 
+
+- modulo_wav:
+- fsk:
+- recorder:
+- codificación:
+
+
+Resultados esperados
+--------------------
+
+####  Gráficas:
+
+A partir de la ejecución del código, y utilizando distintos audios de prueba, se obtiene un conjunto de gráficas que facilita la comprensión de las señales. 
+
+- Gráfica en el dominio del tiempo: al ejecutar **test_plot_and_filter.py**, el cual utiliza el audio de prueba **ook.wav**, se obtiene una gráfica en el dominio del tiempo, con la señal tanto filtrada como no filtrada, cabe mencional que el filtro aplicado es un filtro *pasabajos*.
+              
+1) Gráfica dominio del tiempo - señal sin filtrar:
+![](https://github.com/redes-usach/redes-equipo-1/blob/master/resources/plots/Time%20domain%20plot.png?raw=true)
+
+1) Gráfica dominio del tiempo - señal filtrada:
+![](https://github.com/redes-usach/redes-equipo-1/blob/master/resources/plots/Time%20domain%20plot%20%28FILTERED%29.png?raw=true)
+
+- Gráfica en el dominio de la frecuencia: al ejecutar **test_plot_and_filter.py**, el cual utiliza el audio de prueba **ook.wav**, en esta gráfica, a la señal se le aplica la transformada de fourier, con lo cual se obtienen dos gráficas en el dominio de la frecuencia, con la señal tanto filtrada como no filtrada.
+
+1) Gráfica dominio de la frecuencia - señal sin filtrar
+![](https://github.com/redes-usach/redes-equipo-1/blob/master/resources/plots/Frequency%20domain%20plot.png?raw=true)
+
+2) Gráfica dominio de la frecuencia - señal filtrada
+![](https://github.com/redes-usach/redes-equipo-1/blob/master/resources/plots/Frequency%20domain%20plot%20%28FILTERED%29.png?raw=true)
+
+Al aplicar el filtro *pasabajos* - al igual que para el caso anterior- e puede apreciar como los valores de frecuencias mas altas son despreciadas por el filtro, dejando valores entre los 0 y 3000 Hz. Se puede observar que aproximadamente en los 2000 Hz, se encuentran los valores relevantes del audio, el resto siendo ruido en su mayoria.
+
+- Espectograma: Al realizar la ejecución del **test_plot_and_filter.py**, con el audio de prueba **ook.wav**, se obtienen dos gráficas, una filtrada y otra sin filtrar, en donde se puede apreciar la energía del contenido frecuencial de la señal, en función del tiempo. Es importante añadir, que al igual que en los dos casos anteriores el filtro aplicado es un filtro *pasabajos*.
+
+1) Gráfica del espectrograma - señal sin filtrar.
+![](https://github.com/redes-usach/redes-equipo-1/blob/master/resources/plots/Spectogram%20plot.png?raw=true)
+
+1) Gráfica del espectrograma - señal filtrada.
+![](https://github.com/redes-usach/redes-equipo-1/blob/master/resources/plots/Spectogram%20plot%20%28FILTERED%29.png?raw=true)
+
+El programa también provee de otras gráficas, cuyas imágenes no se adjuntan en este documento, sin embargo, se pueden obtener al ejecutar el **test_BFSK_parte_1.py**, entre las cuales destacan:
+
+- Gráfica que muestra la señal original enviada, la señal portadora para el símbolo 0, la señal portadora para el símbolo 1 y la señal modulada.
+
+- La gráfica del espectrograma de la señal, sin ruido y con ruido.
+
+- La gráfica de la señal modulada, la señal portadora para el símbolo 0, la gráfica con la correlación para el símbolo 0, la señal portadora para el símbolo 1 y la correlación para el símbolo 1.
+
+Es importante mencionar que los datos utilizados en **test_BFSK_parte_1.py** no son realizados con una señal de audio, sino utilizando el siguiente conjunto de bits: *10101*.
