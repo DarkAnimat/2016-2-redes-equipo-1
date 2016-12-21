@@ -16,9 +16,9 @@ retornarla, luego esta es codificada por la función "encode_image_to_data_strea
 de la imagen.
 
 Modulación: El emisor ahora realizara una modulación BFSK mediante la función "bfsk_modulation" de "FSK.py", definiendo las 2 portadoras respectivas que seran
-FRECUENCIAPORTADORAPARABIT0 y FRECUENCIAPORTADORAPARABIT1, de esta manera se genera una señal la codificación realizada a la imagen, por cada bit 0 se modula una frecuencia
-de FRECUENCIAPORTADORAPARABIT0, y por cada bit 1 se modula una frecuencia DE FRECUENCIAPORTADORAPARABIT1, además se define que la duración de cada bit sera de DURACIONDECADABIT,
-es decir, tasa de transmisión será de TASADEBITPORSEGUNDO por segundo, esta ultima característica es especialmente acorde a la consideraciones y pruebas realizadas con respecto
+8000 Hz y 9000 Hz, de esta manera se genera una señal la codificación realizada a la imagen, por cada bit 0 se modula una frecuencia
+de 8000 Hz, y por cada bit 1 se modula una frecuencia DE 9000 Hz, además se define que la duración de cada bit sera de 1/50 segundos,
+es decir, tasa de transmisión será de 50 bits por segundo, esta ultima característica es especialmente acorde a la consideraciones y pruebas realizadas con respecto
 a las características técnicas del parlante y micrófono del computador emisor y receptor respectivamente.
 
 Generar WAV: Una vez obtenida la señal con la función "write_wav_file" del modulo "modulo_wav.py", se genera el archivo de audio que transmitirá la señal por los parlantes del
