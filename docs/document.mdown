@@ -7,22 +7,57 @@ El presente documento busca ser una guía para aquellos que hagan uso del softwa
 ----------
 Descripción del proceso
 --------------------
-####  Características principales:
 
-- añadir las características principales
+La situación inicial corresponde a ambos computadores corriendo el software de emisión y receptor respectivamente, donde se realizaran las siguientes etapas secuencialmente:
 
-####  Proceso:
+Codificación: El emisor realiza la conversión de la imagen a stream de bits, primero utilizando la función "open_image_file" de "codificacion.py" para abrir la imagen y
+retornarla, luego esta es codificada por la función "encode_image_to_data_streams" de "codificacion.py", aquí se define el largo y ancho de la imagen tendrán un máximo de
+2^32 pixeles, y se obtiene como arreglo, posteriormente se transforma en una secuencia de bits cada posición del arreglo para finalmente retornar esta codificación total
+de la imagen.
 
-Escribir el proceso.
+Modulación: El emisor ahora realizara una modulación BFSK mediante la función "bfsk_modulation" de "FSK.py", definiendo las 2 portadoras respectivas que seran
+FRECUENCIAPORTADORAPARABIT0 y FRECUENCIAPORTADORAPARABIT1, de esta manera se genera una señal la codificación realizada a la imagen, por cada bit 0 se modula una frecuencia
+de FRECUENCIAPORTADORAPARABIT0, y por cada bit 1 se modula una frecuencia DE FRECUENCIAPORTADORAPARABIT1, además se define que la duración de cada bit sera de DURACIONDECADABIT,
+es decir, tasa de transmisión será de TASADEBITPORSEGUNDO por segundo, esta ultima característica es especialmente acorde a la consideraciones y pruebas realizadas con respecto
+a las características técnicas del parlante y micrófono del computador emisor y receptor respectivamente.
+
+Generar WAV: Una vez obtenida la señal con la función "write_wav_file" del modulo "modulo_wav.py", se genera el archivo de audio que transmitirá la señal por los parlantes del
+emisor.
+
+Transmisión: Ahora bien, el emisor posee solo un thread encargado de comenzar a transmitir la señal modulada, mientras que en el receptor se encuentran 2 threads, uno encargado de
+escuchar y otro de grabar, que corresponden a las funciones de "listen" y "record" que se encuentran en el modulo "recorder.py", en este modulo también se define el volumen mínimo
+de transmisión, según el volumen mínimo detectado por el computador del receptor que es VOLUMENMINIMODETRANSMISION. De esta manera, ambos programas de receptor y emisor comenzaran
+a correr al mismo tiempo, pero el receptor comenzara a grabar una vez que detecta la frecuencia de alguna de las 2 portadoras mientras escucha, de tal manera que el thread encargado
+de escuchar enviara un evento al thread de grabar una vez que detecte alguna de estos 2 portadoras, y una vez deje de detectar alguna de estas 2 portadoras, dejara de grabar y escuchar.
+Y procederá a procesar la señal obtenida.
+
+Demodulación: El receptor ahora realizara la demodulación por el banco de correlacionador con la funcion "bfsk_correlation" que se encuentra en el modulo "FSK.py". Por supuesto el
+receptor conoce perfectamente las 2 portadoras que utilizo el emisor, de esta manera realiza una correlación para cada pulso de señal y realiza una correlación de cada portadora con
+respecto a esa, el valor que sea mayor, es decir, el más cercano a 1, se asignara que el valor de bit era el que representaba esa señal portadora, y así hasta completar la señal
+completa y demodularla.
+
+Decodificación: El receptor procede con la señal demodulada a generar la imagen que ha obtenido con la función "decode_data_stream_to_image" que se encuentra
+en el modulo "codificacion.py". Por supuesto siguiente el mismo formato que hizo el emisor al codificarla.
 
 Módulos generales y su función
 --------------------
 A continuación se mencionan y describen brevemente los módulos principales que componen el programa. 
 
-- modulo_wav:
-- fsk:
-- recorder:
-- codificación:
+Modulo WAV: En este modulo tal como dice su nombre se encuentran funciones para el manejo de archivos WAV, tanto su creación como su manejo, es decir, funciones que
+van desde la creación que implica una grabación y procesamiento de un audio, como las funciones que sirven de herramientas, tales como para abrir y cerrar el archivos WAV, imprimir
+su largo, su cantidad de canales, entre otros datos, reproducir este WAV e incluso graficarlo en los distintos dominios de frecuencia y tiempo.
+
+FSK: En este modulo se maneja lo que es modulación y demodulación en BFSK, primeros teniendo funciones tan sencillas como definir las frecuencias para las 2 portadoras, el pulso,
+hasta lo que es funciones tal como la modulación BFSK, es decir, asignar valores de bit 0 o 1, en base a 2 señales portadoras distintas definidas y demodulación, que se realiza con el
+banco de correlación, es decir, que a cada pulso de señal se realiza una correlacion con respecto a cada una de las portadoras, con el fin de comparar y estimar que bit le corresponde.
+
+Recorder: Este modulo contiene el funcionamiento necesario para que el computador receptor pueda escuchar y grabar la señal, se encuentran las funciones “listen” y “record” las cuales,
+permiten la primera escuchar el stream de datos, es decir, el audio que se está recibiendo, y la segunda, realiza el proceso de grabación del audio y posteriormente proceder a demodularlo y
+decodificarlo para hacer la imagen. Además contiene el main necesario para realizar el proceso completo del computador receptor en el main de este modulo.
+
+Codificación: Este modulo contiene lo necesario para para la codificación de la imagen para el emisor, y decodificación para el receptor, de tal forma de generar por ejemplo con
+la función “encode_image_to_data_streams” en el emisor a partir de esta imagen un stream de datos, en base al formato definido de 32x32 pixeles, el cual debe ser acorde con la función
+“decode_data_streams_to_image” en el receptor para decodificar el stream de datos y pasarlo a imagen.
 
 
 Resultados esperados
